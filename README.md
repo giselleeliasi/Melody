@@ -5,7 +5,7 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 
 | Melody   | Python |
 |----------|----------|
-| Row 1A   | ``` Print("Hello, World!")```   |
+| ``` play ("Hello, world!") ```  | ``` print("Hello, World!")```   |
 
 
 | Melody   | Python |
