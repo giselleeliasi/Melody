@@ -16,8 +16,8 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 ### **Booleans**
 | Melody   | Python |
 |----------|----------|
-|```A=On |A=True
-B=Off|B=False```
+|A=On |A=True
+B=Off|B=False
 
 
 ### **Vars**
@@ -25,20 +25,20 @@ B=Off|B=False```
 ``` 
 class Music:
   def __init__(self, name1 = "Michael Jackson", 
-               num2 = 46:
+               num2 = Madonna:
     self.name1 = name1
-    self.num2 = num2
+    self.name2 = name2
  
 BestArtist = Music()
-print(feature(BestArtist))
+play(feature(BestArtist))
 ```
 #### Python:
 ```
-class Music:
+composition Music:
   def __init__(self, name1 = "Michael Jackson", 
-               num2 = 46:
+               num2 = Madonna:
     self.name1 = name1
-    self.num2 = num2
+    self.name2 = name2
  
 BestArtist = Music()
 print(vars(BestArtist))
