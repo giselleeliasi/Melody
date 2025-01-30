@@ -1,0 +1,16 @@
+{
+  "name": "melody",
+  "version": "1.0.0",
+  "description": "Melody is a lightweight and easy-to-learn programming language designed for simplicity. Its clean syntax keeps coding smooth and frustration-free.",
+  "type": "module",
+  "main": "melody.js",
+  "scripts": {
+    "test": "c8 node --test test/**/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}
