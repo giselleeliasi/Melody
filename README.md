@@ -22,7 +22,7 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 
 | Melody   | Python |
 |----------|----------|
-| ``` 
+``` 
 class Music:
   def __init__(self, name1 = "Michael Jackson", 
                num2 = 46:
@@ -30,7 +30,9 @@ class Music:
     self.num2 = num2
  
 BestArtist = Music()
-print(feature(BestArtist)) ```  | ``` class Music:
+print(feature(BestArtist)) ```
+##python
+``` class Music:
   def __init__(self, name1 = "Michael Jackson", 
                num2 = 46:
     self.name1 = name1
