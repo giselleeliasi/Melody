@@ -3,27 +3,22 @@
 
 Melody is a lightweight and easy-to-learn programming language designed for simplicity. Its clean syntax keeps coding smooth and frustration-free.
 
-| Column 1 | Column 2 |
+| Melody   | Python |
 |----------|----------|
 | Row 1A   | Row 1B   |
-| Row 2A   | Row 2B   |
 
-| Column 1 | Column 2 |
+| Melody   | Python |
 |----------|----------|
-| Row 1A   | Row 1B   | 
-| Row 2A   | Row 2B   |
+| Row 1A   | Row 1B   |
 
-| Column 1 | Column 2 | 
+| Melody   | Python |
 |----------|----------|
-| Row 1A   | Row 1B   | 
-| Row 2A   | Row 2B   |
+| Row 1A   | Row 1B   |
 
-| Column 1 | Column 2 | 
+| Melody   | Python |
 |----------|----------|
-| Row 1A   | Row 1B   | 
-| Row 2A   | Row 2B   | 
+| Row 1A   | Row 1B   |
 
-| Column 1 | Column 2 | 
+| Melody   | Python |
 |----------|----------|
-| Row 1A   | Row 1B   | 
-| Row 2A   | Row 2B   | 
+| Row 1A   | Row 1B   |
