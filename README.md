@@ -42,12 +42,17 @@ class Music:
 BestArtist = Music()
 print(vars(BestArtist))
 ```  
-
-
-| Melody   | Python |
-|----------|----------|
-| ``` play ("Hello, world!") ```  | ``` print("Hello, World!")```   |
-
+##Melody
+```
+songs = ["5% Tint", "PAID", "Imagine"]
+repeat x in songs:
+  play(x)
+```
+##Python
+```
+songs = ["5% Tint", "PAID", "Imagine"]
+for x in fruits:
+  print(x)
 ________________________________________________________________________________________________________________________
 
 #Features
