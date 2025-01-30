@@ -1,0 +1,55 @@
+
+## Examples:
+### **Print**
+| Melody   | Python |
+|----------|----------|
+| ``` play ("Hello, world!") ```  | ``` print("Hello, World!")```   |
+
+### **Comments**
+| Melody   | Python |
+|----------|----------|
+| ``` ♫This is a comment  ```  | ``` #This is a comment```   |
+
+### **Booleans**
+| Melody   | Python |
+|----------|----------|
+|A=On |A=True
+B=Off|B=False
+
+
+### **Vars**
+#### Melody:
+``` 
+class Music:
+  def __init__(self, name1 = "Michael Jackson", 
+               num2 = Madonna:
+    self.name1 = name1
+    self.name2 = name2
+ 
+BestArtist = Music()
+play(feature(BestArtist))
+```
+#### Python:
+```
+composition Music:
+  def __init__(self, name1 = "Michael Jackson", 
+               num2 = Madonna:
+    self.name1 = name1
+    self.name2 = name2
+ 
+BestArtist = Music()
+print(vars(BestArtist))
+```
+### **For loops**
+#### Melody:
+```
+songs = ["5% Tint", "PAID", "Imagine"]
+repeat x in songs:
+  play(x)
+```
+#### Python:
+```
+songs = ["5% Tint", "PAID", "Imagine"]
+for x in fruits:
+  print(x)
+```
