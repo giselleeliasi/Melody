@@ -20,8 +20,8 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 |B=Off``` | ```B=False``` |
 
 
-### **vars**
-#### Melody
+### **Vars**
+#### Melody:
 ``` 
 class Music:
   def __init__(self, name1 = "Michael Jackson", 
@@ -32,7 +32,7 @@ class Music:
 BestArtist = Music()
 print(feature(BestArtist))
 ```
-#### python
+#### Python:
 ```
 class Music:
   def __init__(self, name1 = "Michael Jackson", 
@@ -43,14 +43,14 @@ class Music:
 BestArtist = Music()
 print(vars(BestArtist))
 ```
-### **for loops**
-#### Melody
+### **For loops**
+#### Melody:
 ```
 songs = ["5% Tint", "PAID", "Imagine"]
 repeat x in songs:
   play(x)
 ```
-#### Python
+#### Python:
 ```
 songs = ["5% Tint", "PAID", "Imagine"]
 for x in fruits:
@@ -58,7 +58,7 @@ for x in fruits:
 ```
 ________________________________________________________________________________________________________________________
 
-### Features
+## Features
 - Melody / Music Theme
 - Influenced by Python
 - Dynamic Typing
