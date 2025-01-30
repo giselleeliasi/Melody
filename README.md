@@ -10,12 +10,13 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 #Comments
 | Melody   | Python |
 |----------|----------|
-| ``` &This is a comment  ```  | ``` #This is a comment```   |
+| ``` ♫This is a comment  ```  | ``` #This is a comment```   |
 
 
 | Melody   | Python |
 |----------|----------|
-| ``` ♫ ("Hello, world!") ```  | ``` print("Hello, World!")```   |
+| ```  A=On
+B=Off```   | ``` print("Hello, World!")```   |
 
 
 | Melody   | Python |
