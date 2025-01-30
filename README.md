@@ -15,9 +15,9 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 
 | Melody   | Python |
 |----------|----------|
-| ```  A=On
-B=Off```   | ``` A=True
-B=False```   |
+|``` A=On```|```A=True```
+|```B=Off``` | ```B=False``` |
+
 
 
 | Melody   | Python |
