@@ -16,13 +16,14 @@ Melody is a lightweight and easy-to-learn programming language designed for simp
 | Melody   | Python |
 |----------|----------|
 |``` A=On```|```A=True```
-|```B=Off``` | ```B=False``` |
+|B=Off``` | ```B=False``` |
 
 
 
 | Melody   | Python |
 |----------|----------|
-| ``` class Music:
+| ``` 
+class Music:
   def __init__(self, name1 = "Michael Jackson", 
                num2 = 46, name3 = "Madonna"):
     self.name1 = name1
