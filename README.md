@@ -1,7 +1,7 @@
 <img width="506" alt="Screenshot 2025-01-29 at 5 25 01 PM" src="https://github.com/user-attachments/assets/ec711ff0-3ed8-4bac-9625-8613e5c0d49d" />
 
 # Melody
-**Designed by Jillian Hunter, Giselle Eliasi, and Hovan
+**Designed by Jillian Hunter, Giselle Eliasi, and Hovannes Baboudjian.
 Melody is a programming language inspired by the flow and structure of music. Just like a good song, we believe coding should be simple, expressive, and easy to follow. Whether you're a seasoned developer or just starting out, Melody keeps things intuitive, making programming feel more like composing a tune than writing rigid lines of code. 
 
 
