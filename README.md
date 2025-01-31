@@ -26,8 +26,8 @@ B=Off|B=False
 ### **Vars**
 #### Melody:
 ``` 
-class Music:
-  def __init__(self, name1 = "Michael Jackson", 
+composition Music:
+  measure __init__(self, name1 = "Michael Jackson", 
                num2 = Madonna:
     self.name1 = name1
     self.name2 = name2
@@ -37,7 +37,7 @@ play(feature(BestArtist))
 ```
 #### Python:
 ```
-composition Music:
+class Music:
   def __init__(self, name1 = "Michael Jackson", 
                num2 = Madonna:
     self.name1 = name1
