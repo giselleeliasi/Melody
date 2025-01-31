@@ -55,7 +55,7 @@ repeat x in songs:
 ```
 #### Python:
 ```
-songs = ["5% Tint", "PAID", "Imagine"]
+fruits = ["apple", "orange", "strawberry"]
 for x in fruits:
   print(x)
 ```
