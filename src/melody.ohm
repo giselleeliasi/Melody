@@ -1,89 +1,89 @@
-Carlos {
-  Program     = Statement+
+Melody {
+  Program     = Composition+
 
-  Statement   = VarDecl
-              | TypeDecl
-              | FunDecl
-              | Exp9 ("++" | "--") ";"                        --bump
-              | Exp9 "=" Exp ";"                              --assign
-              | Exp9_call ";"                                 --call
-              | break ";"                                     --break
-              | return Exp ";"                                --return
-              | return ";"                                    --shortreturn
-              | IfStmt
-              | LoopStmt
+  Composition = NoteDecl
+              | ScaleDecl
+              | MelodyDecl
+              | Note ("++" | "--") ";"   --transpose
+              | Note "=" Chord ";"       --assign
+              | Note_play ";"            --play
+              | rest ";"                 --rest
+              | return Chord ";"         --return
+              | return ";"               --shortreturn
+              | Harmony
+              | Rhythm
 
-  VarDecl     = (let | const) id "=" Exp ";"
-  TypeDecl    = struct id "{" Field* "}"
-  Field       = id ":" Type
-  FunDecl     = function id Params (":" Type)? Block
-  Params      = "(" ListOf<Param, ","> ")"
-  Param       = id ":" Type
+  NoteDecl    = (let | const) id "=" Chord ";"
+  ScaleDecl   = scale id "{" Interval* "}"
+  Interval    = id ":" Pitch
+  MelodyDecl  = melody id Signature (":" Pitch)? Composition
+  Signature   = "(" ListOf<Instrument, ","> ")"
+  Instrument  = id ":" Pitch
 
-  Type        = Type "?"                                      --optional
-              | "[" Type "]"                                  --array
-              | "(" ListOf<Type, ","> ")" "->" Type           --function
-              | id                                            --id
+  Pitch       = Pitch "?"                    --optional
+              | "[" Pitch "]"                 --chord
+              | "(" ListOf<Pitch, ","> ")" "->" Pitch  --progression
+              | id                            --id
 
-  IfStmt      = if Exp Block else Block                       --long
-              | if Exp Block else IfStmt                      --elsif
-              | if Exp Block                                  --short
-  LoopStmt    = while Exp Block                               --while
-              | repeat Exp Block                              --repeat
-              | for id in Exp ("..." | "..<") Exp Block       --range
-              | for id in Exp Block                           --collection
-  Block       = "{" Statement* "}"
+  Harmony     = if Chord Composition else Composition  --fullharmony
+              | if Chord Composition else Harmony      --modulation
+              | if Chord Composition                 --simpleharmony
+  Rhythm      = while Chord Composition             --loop
+              | repeat Chord Composition            --repeat
+              | for id in Chord ("..." | "..<") Chord Composition  --range
+              | for id in Chord Composition         --groove
+  Composition = "{" Composition+ "}"
 
-  Exp         = Exp1 "?" Exp1 ":" Exp                         --conditional
-              | Exp1
-  Exp1        = Exp1 "??" Exp2                                --unwrapelse
-              | Exp2
-  Exp2        = Exp3 ("||" Exp3)+                             --or
-              | Exp3 ("&&" Exp3)+                             --and
-              | Exp3
-  Exp3        = Exp4 ("|" Exp4)+                              --bitor
-              | Exp4 ("^" Exp4)+                              --bitxor
-              | Exp4 ("&" Exp4)+                              --bitand
-              | Exp4
-  Exp4        = Exp5 ("<="|"<"|"=="|"!="|">="|">") Exp5       --compare
-              | Exp5
-  Exp5        = Exp5 ("<<" | ">>") Exp6                       --shift
-              | Exp6
-  Exp6        = Exp6 ("+" | "-") Exp7                         --add
-              | Exp7
-  Exp7        = Exp7 ("*"| "/" | "%") Exp8                    --multiply
-              | Exp8
-  Exp8        = Exp9 "**" Exp8                                --power
-              | Exp9
-              | ("#" | "-" | "!" | some | random) Exp9        --unary
-  Exp9        = true ~mut
-              | false ~mut
-              | floatlit ~mut
-              | intlit ~mut
-              | no Type ~mut                                  --emptyopt
-              | Exp9 ("(" | "?(") ListOf<Exp, ","> ")" ~mut   --call
-              | Exp9 ("[" | "?[") Exp "]"                     --subscript
-              | Exp9 ("." | "?.") id                          --member
-              | stringlit ~mut
-              | id                                            --id
-              | Type_array "(" ")" ~mut                       --emptyarray
-              | "[" NonemptyListOf<Exp, ","> "]" ~mut         --arrayexp
-              | "(" Exp ")" ~mut                              --parens
+  Chord       = Chord1 "?" Chord1 ":" Chord  --conditional
+              | Chord1
+  Chord1      = Chord1 "??" Chord2           --fallback
+              | Chord2
+  Chord2      = Chord3 ("||" Chord3)+        --or
+              | Chord3 ("&&" Chord3)+        --and
+              | Chord3
+  Chord3      = Chord4 ("|" Chord4)+         --union
+              | Chord4 ("^" Chord4)+         --dissonance
+              | Chord4 ("&" Chord4)+         --consonance
+              | Chord4
+  Chord4      = Chord5 ("<="|"<"|"=="|"!="|">="|">") Chord5  --compare
+              | Chord5
+  Chord5      = Chord5 ("<<" | ">>") Chord6  --shift
+              | Chord6
+  Chord6      = Chord6 ("+" | "-") Chord7    --add
+              | Chord7
+  Chord7      = Chord7 ("*"| "/" | "%") Chord8  --multiply
+              | Chord8
+  Chord8      = Chord9 "**" Chord8          --power
+              | Chord9
+              | ("#" | "-" | "!" | some | random) Chord9  --unary
+  Chord9      = true ~mod
+              | false ~mod
+              | beatlit ~mod
+              | notelit ~mod
+              | rest Pitch ~mod           --emptyrest
+              | Chord9 ("(" | "?(") ListOf<Chord, ","> ")" ~mod  --play
+              | Chord9 ("[" | "?[") Chord "]"  --transpose
+              | Chord9 ("." | "?.") id    --member
+              | lyriclit ~mod
+              | id                        --id
+              | Pitch_chord "(" ")" ~mod  --emptychord
+              | "[" NonemptyListOf<Chord, ","> "]" ~mod  --chordexp
+              | "(" Chord ")" ~mod        --parens
 
-  intlit      = digit+
-  floatlit    = digit+ "." digit+ (("E" | "e") ("+" | "-")? digit+)?
-  stringlit   = "\"" char* "\""
+  notelit     = note+
+  beatlit     = beat+ "." beat+ (("E" | "e") ("+" | "-")? beat+)?
+  lyriclit    = "\"" char* "\""
   char        = ~control ~"\\" ~"\"" any
-              | "\\" ("n" | "t" | "\"" | "\\")                --escape
-              | "\\u{" hex hex? hex? hex? hex? hex? "}"       --codepoint
+              | "\\" ("n" | "t" | "\"" | "\\")  --escape
+              | "\\u{" hex hex? hex? hex? hex? hex? "}"  --codepoint
   control     = "\x00".."\x1f" | "\x80".."\x9f"
   hex         = hexDigit
-  mut         = ~"==" "=" | "++" | "--"
+  mod         = ~"==" "=" | "++" | "--"
 
   let         = "let" ~alnum
   const       = "const" ~alnum
-  struct      = "struct" ~alnum
-  function    = "function" ~alnum
+  scale       = "scale" ~alnum
+  melody      = "melody" ~alnum
   if          = "if" ~alnum
   else        = "else" ~alnum
   while       = "while" ~alnum
@@ -91,15 +91,15 @@ Carlos {
   for         = "for" ~alnum
   in          = "in" ~alnum
   random      = "random" ~alnum
-  break       = "break" ~alnum
+  rest        = "rest" ~alnum
   return      = "return" ~alnum
   some        = "some" ~alnum
   no          = "no" ~alnum
   true        = "true" ~alnum
   false       = "false" ~alnum
-  keyword     = let | const | struct | function | if | else | while | repeat
-              | for | in | break | return | some | no | random | true | false
+  keyword     = let | const | scale | melody | if | else | while | repeat
+              | for | in | rest | return | some | no | random | true | false
   id          = ~keyword letter alnum*
 
-  space      += "//" (~"\n" any)*                             --comment
+  space      += "//" (~"\n" any)*  --comment
 }
