@@ -1,7 +1,6 @@
 Melody {
   Program     = Composition+
 
-<<<<<<< HEAD
   Composition   = NoteDecl
               | GrandDecl
               | MeasureDecl
@@ -70,90 +69,13 @@ Melody {
               | Type_array "(" ")" ~mut                       --emptyarray
               | "[" NonemptyListOf<Exp, ","> "]" ~mut         --arrayexp
               | "(" Exp ")" ~mut                              --parens
-=======
-  Composition = NoteDecl
-              | ScaleDecl
-              | MelodyDecl
-              | Note ("++" | "--") ";"   -- transpose
-              | Note "=" Chord ";"       -- assign
-              | Note_play ";"            -- play
-              | rest ";"                 -- rest
-              | return Chord ";"         -- return
-              | return ";"               -- shortreturn
-              | Harmony
-              | Rhythm
-              | CompositionBlock
-
-  CompositionBlock = "{" Composition+ "}"
-
-  NoteDecl    = (let | const) id "=" Chord ";"
-  ScaleDecl   = scale id "{" Interval* "}"
-  Interval    = id ":" Pitch
-  MelodyDecl  = melody id Signature (":" Pitch)? CompositionBlock
-  Signature   = "(" ListOf<Instrument, ","> ")"
-  Instrument  = id ":" Pitch
-
-  Pitch = Pitch "?"                    -- optional
-        | "[" Pitch "]"                -- chord
-        | "(" ListOf<Pitch, ","> ")" "->" Pitch  -- progression
-        | id                           -- id
-        | digit+ ("." digit+)? (("e" | "E") ("+" | "-")? digit+)?  -- number (use built-in `digit` rule)
-
-  Harmony     = if Chord CompositionBlock (else CompositionBlock)?  -- fullharmony
-              | if Chord CompositionBlock else Harmony              -- modulation
-  Rhythm      = while Chord CompositionBlock                        -- loop
-              | repeat Chord CompositionBlock                       -- repeat
-              | for id in Chord ("..." | "..<") Chord CompositionBlock  -- range
-              | for id in Chord CompositionBlock                    -- groove
-
-  Chord       = Chord1 "?" Chord1 ":" Chord  -- conditional
-              | Chord1
-  Chord1      = Chord1 "??" Chord2           -- fallback
-              | Chord2
-  Chord2      = Chord3 ("||" Chord3)+        -- or
-              | Chord3 ("&&" Chord3)+        -- and
-              | Chord3
-  Chord3      = Chord4 ("|" Chord4)+         -- union
-              | Chord4 ("^" Chord4)+         -- dissonance
-              | Chord4 ("&" Chord4)+         -- consonance
-              | Chord4
-  Chord4      = Chord5 ("<="|"<"|"=="|"!="|">="|">") Chord5  -- compare
-              | Chord5
-  Chord5      = Chord5 ("<<" | ">>") Chord6  -- shift
-              | Chord6
-  Chord6      = Chord6 ("+" | "-") Chord7    -- add
-              | Chord7
-  Chord7      = Chord7 ("*"| "/" | "%") Chord8  -- multiply
-              | Chord8
-  Chord8      = Chord9 "**" Chord8          -- power
-              | Chord9
-              | ("#" | "-" | "!" | some | random) Chord9  -- unary
-  Chord9      = true ~mod
-              | false ~mod
-              | beatlit ~mod
-              | notelit ~mod
-              | rest Pitch ~mod           -- emptyrest
-              | Chord9 ("(" | "?(") ListOf<Chord, ","> ")" ~mod  -- play
-              | Chord9 ("[" | "?[") Chord "]"  -- transpose
-              | Chord9 ("." | "?.") id    -- member
-              | lyriclit ~mod
-              | id                        -- id
-              | Pitch_chord "(" ")" ~mod  -- emptychord
-              | "[" NonemptyListOf<Chord, ","> "]" ~mod  -- chordexp
-              | "(" Chord ")" ~mod        -- parens
->>>>>>> f98cb88b0dc3b13e4397d4392cfd497ae1a8e61f
 
   intlit      = digit+
   floatlit    = digit+ "." digit+ (("E" | "e") ("+" | "-")? digit+)?
   stringlit   = "\"" char* "\""
   char        = ~control ~"\\" ~"\"" any
-<<<<<<< HEAD
               | "\\" ("n" | "t" | "\"" | "\\")                --escape
               | "\\u{" hex hex? hex? hex? hex? hex? "}"       --codepoint
-=======
-              | "\\" ("n" | "t" | "\"" | "\\")  -- escape
-              | "\\u{" hex hex? hex? hex? hex? hex? "}"  -- codepoint
->>>>>>> f98cb88b0dc3b13e4397d4392cfd497ae1a8e61f
   control     = "\x00".."\x1f" | "\x80".."\x9f"
   hex         = hexDigit
   mut         = ~"==" "=" | "++" | "--"
@@ -179,12 +101,5 @@ Melody {
               | for | in | break | return | some | no | random | true | false
   id          = ~keyword letter alnum*
 
-<<<<<<< HEAD
   space      += "//" (~"\n" any)*                             --comment
 }
-=======
-  space      += "♫" (~"\n" any)*  -- comment
-
-  customDigit = "0".."9"
-}
->>>>>>> f98cb88b0dc3b13e4397d4392cfd497ae1a8e61f
