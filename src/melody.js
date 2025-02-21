@@ -8,9 +8,9 @@ import * as fs from "node:fs/promises";
 import stringify from "graph-stringify";
 import compile from "./compiler.js";
 
-const help = `Carlos compiler
+const help = `Melody compiler
 
-Syntax: carlos <filename> <outputType>
+Syntax: melody <filename> <outputType>
 
 Prints to stdout according to <outputType>, which must be one of:
 
