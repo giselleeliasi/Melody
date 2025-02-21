@@ -1,16 +1,18 @@
+#! /usr/bin/env node
+
+import * as fs from "node:fs/promises";
+import stringify from "graph-stringify";
+import compile from "./compiler.js";
+
 console.log("Hello from Melody.js");
 
 export function add(a, b) {
   return a + b;
 }
 
-import * as fs from "node:fs/promises";
-import stringify from "graph-stringify";
-import compile from "./compiler.js";
-
 const help = `Melody compiler
 
-Syntax: melody <filename> <outputType>
+Syntax: Melody <filename> <outputType>
 
 Prints to stdout according to <outputType>, which must be one of:
 
