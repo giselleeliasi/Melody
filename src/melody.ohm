@@ -101,5 +101,5 @@ Melody {
               | for | in | rest | return | some | no | random | true | false
   id          = ~keyword letter alnum*
 
-  space      += "//" (~"\n" any)*  --comment
+  space      += "♫" (~"\n" any)*  --comment
 }
