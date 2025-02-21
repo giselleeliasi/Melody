@@ -1,5 +1,5 @@
 Melody {
-  Program     = Composition+  --add or make Composition repeatable as needed
+  Program     = Composition+  
 
   Composition   = NoteDecl
               | GrandDecl
