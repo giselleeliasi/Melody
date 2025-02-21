@@ -5,12 +5,15 @@
   "type": "module",
   "main": "melody.js",
   "scripts": {
-    "test": "c8 node --test test/**/*.test.js"
+    "test": "c8 node --test test/*.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "c8": "^10.1.3"
+  },
+  "dependencies": {
+    "graph-stringify": "^1.1.0"
   }
 }
