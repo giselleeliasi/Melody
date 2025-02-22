@@ -56,8 +56,8 @@ Melody {
   Exp8        = Exp9 "**" Exp8                                --power
               | Exp9
               | ("#" | "-" | "!" | some | random) Exp9        --unary
-  Exp9        = true ~mut
-              | false ~mut
+  Exp9        = on ~mut
+              | off ~mut
               | floatlit ~mut
               | intlit ~mut
               | no Type ~mut                                  --emptyopt
@@ -95,14 +95,11 @@ Melody {
   return      = "return" ~alnum
   some        = "some" ~alnum
   no          = "no" ~alnum
-  true        = "true" ~alnum
-  false       = "false" ~alnum
+  on          = "on" ~alnum
+  off         = "off" ~alnum
   keyword     = let | const | grand | measure | if | else | repeatWhile | repeat
-              | for | in | break | return | some | no | random | true | false
+              | for | in | break | return | some | no | random | on | off
   id          = ~keyword letter alnum*
 
   space      += "//" (~"\n" any)*                             --comment
 }
-
-
-
