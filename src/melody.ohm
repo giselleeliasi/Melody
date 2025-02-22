@@ -29,9 +29,8 @@ Melody {
               | if Exp Block else IfStmt                      --elsif
               | if Exp Block                                  --short
   RepeatStmt    = repeatWhile Exp Block                               --repeatWhile
-              | repeat Exp Block                              --repeat
               | for id in Exp ("..." | "..<") Exp Block       --range
-              | for id in Exp Block                           --collection
+              | repeat id in Exp Block                           --collection
   Block       = "{" Composition* "}"
 
   Exp         = Exp1 "?" Exp1 ":" Exp                         --conditional

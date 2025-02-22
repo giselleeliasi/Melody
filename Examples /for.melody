@@ -1,0 +1,4 @@
+songs = ["5% Tint", "PAID", "Imagine"];
+repeat x in songs {
+  play(x);
+}
