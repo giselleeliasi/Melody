@@ -1,7 +1,7 @@
 Melody {
   Program     = Composition+  
 
-  Composition   = NoteDecl
+  Composition = NoteDecl
               | GrandDecl
               | MeasureDecl
               | Exp9 ("++" | "--") ";"                        --bump
@@ -13,10 +13,10 @@ Melody {
               | IfStmt
               | RepeatStmt
 
-  NoteDecl     = (let | const) id "=" Exp ";"
-  GrandDecl    = struct id "{" Field* "}"
+  NoteDecl    = (let | const) id "=" Exp ";"
+  GrandDecl   = grand id "{" Field* "}"
   Field       = id ":" Type
-  MeasureDecl     = function id Params (":" Type)? Block
+  MeasureDecl = measure id Params (":" Type)? Block
   Params      = "(" ListOf<Param, ","> ")"
   Param       = id ":" Type
 
@@ -28,9 +28,10 @@ Melody {
   IfStmt      = if Exp Block else Block                       --long
               | if Exp Block else IfStmt                      --elsif
               | if Exp Block                                  --short
-  RepeatStmt    = repeatWhile Exp Block                               --repeatWhile
+  RepeatStmt  = repeatWhile Exp Block                         --repeatWhile
+              | repeat Exp Block                              --times
               | for id in Exp ("..." | "..<") Exp Block       --range
-              | repeat id in Exp Block                           --collection
+              | for id in Exp Block                           --collection
   Block       = "{" Composition* "}"
 
   Exp         = Exp1 "?" Exp1 ":" Exp                         --conditional
@@ -81,11 +82,11 @@ Melody {
 
   let         = "let" ~alnum
   const       = "const" ~alnum
-  struct      = "struct" ~alnum
-  function    = "function" ~alnum
+  grand      = "grand" ~alnum
+  measure     = "measure" ~alnum
   if          = "if" ~alnum
   else        = "else" ~alnum
-  repeatWhile       = "repeatWhile" ~alnum
+  repeatWhile = "repeatWhile" ~alnum
   repeat      = "repeat" ~alnum
   for         = "for" ~alnum
   in          = "in" ~alnum
@@ -96,7 +97,7 @@ Melody {
   no          = "no" ~alnum
   true        = "true" ~alnum
   false       = "false" ~alnum
-  keyword     = let | const | struct | function | if | else | repeatWhile | repeat
+  keyword     = let | const | grand | measure | if | else | repeatWhile | repeat
               | for | in | break | return | some | no | random | true | false
   id          = ~keyword letter alnum*
 
