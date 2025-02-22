@@ -70,3 +70,21 @@ ________________________________________________________________________________
 - Types: Boolean, Int, Float, Str, Array
 - String Manipulation
 - Easy Error Messages
+
+
+## Grammar Overview
+
+- **Basic Types**: Supports integers, floats, strings, arrays, and optional types (denoted with `?`)
+- **Declarations**: 
+  - Variables using `let` and `const`
+  - `grand` for defining structured data types
+  - `measure` for defining functions
+- **Control Flow**:
+  - Standard `if`/`else` conditionals
+  - `repeat` and `repeatWhile` loops
+  - `for` loops with range (`...` or `..<`) and collection iteration
+- **Musical States**:
+  - `on` and `off` as boolean literals
+  - `random` for randomization
+  - Optional chaining with `?.` and `??` operators
+- **Operators**: Standard arithmetic (`+`, `-`, `*`, `/`, `**`), comparison, and bitwise operations
