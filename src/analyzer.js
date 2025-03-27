@@ -1,315 +1,182 @@
 import * as ohm from "ohm-js";
 
-export class StaticAnalysisError extends Error {
-  constructor(message, node) {
+export class ControlFlowError extends Error {
+  constructor(message) {
     super(message);
-    this.node = node;
-    this.name = "StaticAnalysisError";
-  }
-}
-
-export class ScopeError extends StaticAnalysisError {
-  constructor(message, node) {
-    super(message, node);
-    this.name = "ScopeError";
-  }
-}
-
-export class TypeCheckError extends StaticAnalysisError {
-  constructor(message, node) {
-    super(message, node);
-    this.name = "TypeCheckError";
-  }
-}
-
-export class ControlFlowError extends StaticAnalysisError {
-  constructor(message, node) {
-    super(message, node);
     this.name = "ControlFlowError";
   }
 }
 
-export default function analyze(match) {
-  if (!match || typeof match !== "object" || !match.grammar) {
-    throw new Error("Invalid match object provided");
+export class StaticAnalyzer {
+  constructor() {
+    this.currentScope = null;
+    this.functionReturnType = null;
+    this.inLoop = false;
+    this.errors = [];
+    this.grandTypes = new Map();
+    this.currentFunction = null;
   }
 
-  // Create semantic analyzer
-  const semantics = match.grammar.createSemantics();
+  analyze(ast) {
+    this.errors = [];
+    try {
+      this.analyzeNode(ast);
+    } catch (e) {
+      if (!(e instanceof ControlFlowError)) {
+        throw e;
+      }
+      this.errors.push(e.message);
+    }
+    return this.errors;
+  }
+  analyzeNode(node) {
+    if (!node || typeof node !== "object") return;
 
-  const sharedContext = {
-    scopes: [],
-    errors: [],
-    currentFunction: null,
-  };
-
-  // Utility functions for scope management
-  const pushScope = (type, canBreak = false, canReturn = false) => {
-    const parentScope =
-      sharedContext.scopes.length > 0
-        ? sharedContext.scopes[sharedContext.scopes.length - 1].variables
-        : new Map();
-
-    const newScope = {
-      type,
-      variables: new Map(parentScope),
-      canBreak,
-      canReturn,
-    };
-    sharedContext.scopes.push(newScope);
-    return newScope;
-  };
-
-  const popScope = () => {
-    return sharedContext.scopes.pop();
-  };
-
-  const getCurrentScope = () => {
-    return sharedContext.scopes[sharedContext.scopes.length - 1];
-  };
-
-  const addVariable = (name, type, isConstant = false) => {
-    const currentScope = getCurrentScope();
-
-    // Check for redeclaration in the same scope
-    if (currentScope.variables.has(name)) {
-      throw new ScopeError(`Variable '${name}' already declared in this scope`);
+    if (node.ctorName) {
+      const analyzerMethod = `analyze${node.ctorName}`;
+      if (this[analyzerMethod]) {
+        return this[analyzerMethod](node);
+      }
     }
 
-    currentScope.variables.set(name, { type, isConstant });
-  };
-
-  semantics.addOperation("analyze", {
-    Program(body) {
-      sharedContext.scopes = [];
-      sharedContext.errors = [];
-      sharedContext.currentFunction = null;
-
-      // Create global scope
-      pushScope("global");
-
-      const analyzedBody = body.children
-        .map((statement) => {
-          try {
-            return statement.analyze();
-          } catch (error) {
-            if (error instanceof StaticAnalysisError) {
-              sharedContext.errors.push(error);
-            }
-            return null;
-          }
-        })
-        .filter(Boolean);
-
-      popScope();
-
-      // Throw errors if any
-      if (sharedContext.errors.length > 0) {
-        throw new Error(sharedContext.errors.map((e) => e.message).join("\n"));
-      }
-
-      return {
-        kind: "Program",
-        body: analyzedBody,
-      };
-    },
-
-    VariableDecl(keyword, name, initializer) {
-      const variableName = name.sourceString;
-      const isConstant = keyword.sourceString === "const";
-
-      const type = this.inferType(initializer);
-
-      addVariable(variableName, type, isConstant);
-
-      return {
-        kind: "VariableDeclaration",
-        name: variableName,
-        type: type,
-        isConstant: isConstant,
-        initializer: initializer.analyze ? initializer.analyze() : null,
-      };
-    },
-
-    MeasureDecl(name, params, returnType, body) {
-      const functionName = name.sourceString;
-
-      const currentScope = getCurrentScope();
-      const functionType = returnType ? this.analyzeType(returnType) : "void";
-
-      // Check for function redeclaration
-      if (currentScope.variables.has(functionName)) {
-        throw new ScopeError(`Function '${functionName}' already declared`);
-      }
-
-      currentScope.variables.set(functionName, {
-        type: functionType,
-        kind: "function",
-      });
-
-      const functionScope = pushScope("function", false, true);
-      sharedContext.currentFunction = {
-        name: functionName,
-        returnType: functionType,
-      };
-
-      // Add parameters to function scope
-      const analyzedParams = params.children.map((param) => {
-        const paramName = param.children[0].sourceString;
-        const paramType = this.analyzeType(param.children[1]);
-
-        addVariable(paramName, paramType);
-
-        return {
-          name: paramName,
-          type: paramType,
-        };
-      });
-
-      const analyzedBody = body.analyze();
-
-      popScope();
-      sharedContext.currentFunction = null;
-
-      return {
-        kind: "FunctionDeclaration",
-        name: functionName,
-        params: analyzedParams,
-        returnType: functionType,
-        body: analyzedBody,
-      };
-    },
-
-    ReturnStatement(expr) {
-      const currentFunction = sharedContext.currentFunction;
-      const currentScope = getCurrentScope();
-
-      // Check if return is in a function context
-      if (!currentScope.canReturn) {
-        throw new ControlFlowError("Return statement used in invalid context");
-      }
-
-      // Type check return statement
-      if (currentFunction) {
-        const returnedType = expr ? this.inferType(expr) : "void";
-
-        if (returnedType !== currentFunction.returnType) {
-          throw new TypeCheckError(
-            `Incompatible return type for function '${currentFunction.name}'. ` +
-              `Expected ${currentFunction.returnType}, got ${returnedType}`
-          );
+    for (const key in node) {
+      if (node.hasOwnProperty(key)) {
+        const child = node[key];
+        if (Array.isArray(child)) {
+          child.forEach((c) => this.analyzeNode(c));
+        } else {
+          this.analyzeNode(child);
         }
       }
+    }
+  }
 
-      return {
-        kind: "ReturnStatement",
-        value: expr ? expr.analyze() : null,
-      };
-    },
+  enterScope(isFunction = false) {
+    this.currentScope = {
+      parent: this.currentScope,
+      symbols: new Map(),
+      isFunction,
+    };
+  }
 
-    BreakStatement() {
-      const currentScope = getCurrentScope();
+  exitScope() {
+    this.currentScope = this.currentScope.parent;
+  }
 
-      if (!currentScope.canBreak) {
-        throw new ControlFlowError("Break statement used in invalid context");
+  addSymbol(name, type, isConst = false) {
+    if (this.currentScope.symbols.has(name)) {
+      this.error(`Identifier '${name}' is already declared in this scope`);
+      return;
+    }
+    this.currentScope.symbols.set(name, { type, isConst });
+  }
+
+  lookupSymbol(name) {
+    let scope = this.currentScope;
+    while (scope) {
+      if (scope.symbols.has(name)) {
+        return scope.symbols.get(name);
       }
+      scope = scope.parent;
+    }
+    return null;
+  }
 
-      return {
-        kind: "BreakStatement",
-      };
-    },
+  error(message, node = null) {
+    let location = "";
+    if (node && node.source) {
+      const lineAndCol = node.source.getLineAndColumn();
+      location = `[${lineAndCol.line}:${lineAndCol.column}] `;
+    }
+    this.errors.push(`${location}Error: ${message}`);
+  }
+  checkType(valueType, expectedType) {
+    if (expectedType === "any") return true;
+    if (valueType === expectedType) return true;
 
-    RepeatStmt(type, condition, body) {
-      const loopScope = pushScope("loop", true, false);
+    // Enhanced optional type handling
+    if (expectedType.endsWith("?")) {
+      const baseType = expectedType.slice(0, -1);
+      return valueType === "no" || this.checkType(valueType, baseType);
+    }
 
-      const analyzedBody = body.analyze();
+    // More robust array type handling
+    if (expectedType.startsWith("[") && expectedType.endsWith("]")) {
+      if (!valueType.startsWith("[") || !valueType.endsWith("]")) return false;
+      const expectedElementType = expectedType.slice(1, -1);
+      const valueElementType = valueType.slice(1, -1);
+      return this.checkType(valueElementType, expectedElementType);
+    }
 
-      popScope();
+    // Improved numeric type compatibility
+    if (
+      (expectedType === "float" && valueType === "int") ||
+      (expectedType === "int" && valueType === "float")
+    ) {
+      return true;
+    }
 
-      return {
-        kind: "RepeatStatement",
-        type: type.sourceString,
-        condition: condition.analyze(),
-        body: analyzedBody,
-      };
-    },
+    // Function type exact matching
+    if (expectedType.includes("->")) {
+      return expectedType === valueType;
+    }
 
-    Block(statements) {
-      const blockScope = pushScope(
-        "block",
-        getCurrentScope().canBreak,
-        getCurrentScope().canReturn
-      );
+    return false;
+  }
 
-      // Analyze block statements
-      const analyzedStatements = statements.children
-        .map((stmt) => stmt.analyze())
-        .filter(Boolean);
-
-      popScope();
-
-      return {
-        kind: "Block",
-        body: analyzedStatements,
-      };
-    },
-
-    inferType(node) {
-      if (!node || typeof node.sourceString === "undefined") return "any";
-
-      const sourceString = node.sourceString;
-
-      // Type inference rules
-      if (/^-?\d+$/.test(sourceString)) return "int";
-      if (/^-?\d+\.\d+([eE][-+]?\d+)?$/.test(sourceString)) return "float";
-      if (/^"[^"]*"$/.test(sourceString)) return "string";
-      if (sourceString === "on" || sourceString === "off") return "boolean";
-
-      return "any";
-    },
-
-    analyzeType(typeNode) {
-      // type analysis
-      if (!typeNode) return "any";
-
-      const ctorName = typeNode.ctorName || "";
-
-      if (ctorName === "Type_optional") {
-        return `${this.analyzeType(typeNode.children[0])}?`;
+  // ENHANCED error handling to be more descriptive
+  error(message, node = null) {
+    let location = "";
+    if (node && node.source) {
+      try {
+        const lineAndCol = node.source.getLineAndColumn();
+        location = `[${lineAndCol.line}:${lineAndCol.column}] `;
+      } catch (e) {
+        // Fallback if source location cannot be retrieved
+        location = "[unknown location] ";
       }
-      if (ctorName === "Type_array") {
-        return `[${this.analyzeType(typeNode.children[0])}]`;
-      }
-      if (ctorName === "Type_function") {
-        const paramTypes = typeNode.children
-          .slice(0, -1)
-          .map((t) => this.analyzeType(t));
-        const returnType = this.analyzeType(
-          typeNode.children[typeNode.children.length - 1]
-        );
-        return `(${paramTypes.join(",")}) -> ${returnType}`;
-      }
-      if (ctorName === "Type_id") {
-        return typeNode.sourceString;
-      }
+    }
 
-      return "any";
-    },
+    // More informative error message
+    const fullMessage = `${location}Semantic Error: ${message}`;
+    this.errors.push(fullMessage);
 
-    _default() {
-      return {
-        kind: "Unknown",
-        sourceString: this.sourceString,
-      };
-    },
+    // Optional: Throw for immediate error detection during development
+    // throw new Error(fullMessage);
+  }
 
-    _iter() {
-      return this.children.map((child) =>
-        child.analyze ? child.analyze() : child
-      );
+  // Improved scope symbol management
+  addSymbol(name, type, isConst = false) {
+    if (this.currentScope.symbols.has(name)) {
+      this.error(`Identifier '${name}' is already declared in this scope`);
+      return false;
+    }
+    this.currentScope.symbols.set(name, { type, isConst });
+    return true;
+  }
+}
+export function createAnalyzer(semantics) {
+  const analyzer = new StaticAnalyzer();
+
+  semantics.addOperation("analyze()", {
+    Program(compositions) {
+      const ast = this.toAST();
+      const errors = analyzer.analyze(ast);
+      return { ast, errors };
     },
   });
 
-  const analyzer = semantics(match);
-  return analyzer.analyze();
+  return semantics;
+}
+
+// New default export function added at the end
+export default function analyze(ast) {
+  const analyzer = new StaticAnalyzer();
+  const errors = analyzer.analyze(ast);
+  
+  if (errors.length > 0) {
+    throw new Error(errors.join('\n'));
+  }
+  
+  return ast;
 }
