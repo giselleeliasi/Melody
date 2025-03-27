@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melody Project</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Melody Project ♫</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About the Developers</a></li>
+                <li><a href="project.html">Project</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="project-showcase">
+            <h2>Melody Language Repository</h2>
+            <div class="project-card">
+                <h3>Official GitHub Repository</h3>
+                <p>Explore the source code, contribute, or report issues on GitHub:</p>
+                <a href="https://github.com/giselleeliasi/Melody.git" class="repo-button" target="_blank">
+                    <img src="images/github-icon.png" alt="GitHub Logo" width="20">
+                    View on GitHub
+                </a>
+                <div class="repo-stats">
+                    <span>⭐ 1,000,000 Stars</span>
+                    <span>⎇ 500,000 Forks</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="code-examples">
+            <h2>Melody Code Examples</h2>
+            
+            <div class="example-container">
+                <h3>1. Measure Decleration</h3>
+                <p>A simple measure (function) declaration with a note variable:</p>
+                <div class="code-block melody">
+                    <pre><code class="language-melody">
+// Measure Decleration
+measure playNote(freq: float, duration: float) : float {
+    let noteVolume = freq * 0.5;
+    return noteVolume * duration;
+}
+                    </code></pre>
+                    <button class="copy-button">Copy</button>
+                </div>
+            </div>
+
+            <div class="example-container">
+                <h3>2. Composititon with Conditionals</h3>
+                <p>A complex example with conditional logic and a grand (object-like) declaration:</p>
+                <div class="code-block melody">
+                    <pre><code class="language-melody">
+grand Instrument {
+    name: string,
+    maxVolume: float
+}
+
+measure createSound(instrument: Instrument, intensity: float) {
+    if intensity > instrument.maxVolume {
+        return instrument.maxVolume;
+    } else {
+        let adjustedSound = intensity * 0.8;
+        return adjustedSound;
+    }
+}
+                    </code></pre>
+                    <button class="copy-button">Copy</button>
+                </div>
+            </div>
+
+            <div class="example-container">
+                <h3>3. Array and Iteration</h3>
+                <p>An example showcasing array and collection manipulation:</p>
+                <div class="code-block melody">
+                    <pre><code class="language-melody">
+measure harmonize(notes: [float]) : [float] {
+    const harmonizedNotes = [];
+    for note in notes {
+        let harmonicNote = note * 1.5;
+        harmonizedNotes = harmonizedNotes + [harmonicNote];
+    }
+    return harmonizedNotes;
+}
+                    </code></pre>
+                    <button class="copy-button">Copy</button>
+                </div>
+            </div>
+
+            <div class="example-container">
+                <h3>4. Mathematical Operations</h3>
+                <p>A complex expression with bitwise and power operations:</p>
+                <div class="code-block melody">
+                    <pre><code class="language-melody">
+measure generateWaveform(baseFreq: float, complexity: int) {
+    let waveIntensity = (baseFreq ** 2) & complexity;
+    let randomFactor = random waveIntensity;
+    return randomFactor;
+}
+                    </code></pre>
+                    <button class="copy-button">Copy</button>
+                </div>
+            </div>
+
+            <div class="example-container">
+                <h3>5. Optional Type and Null Handling</h3>
+                <p>An example with optional types and error handling:</p>
+                <div class="code-block melody">
+                    <pre><code class="language-melody">
+measure processOptionalNote(note: float?) : float {
+    let result = note ?? 440.0;  // Default to A4 if note is null
+    repeatWhile result > 20.0 {
+        result = result / 2.0;
+    }
+    return result;
+}
+                    </code></pre>
+                    <button class="copy-button">Copy</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2025 Melody Language | Open Source on <a href="https://github.com/giselleeliasi/Melody.git">GitHub</a></p>
+    </footer>
+</body>
+</html>
