@@ -1,18 +1,21 @@
-/* General styles */
+/* Cute Girly Pastel Styling */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
+    font-family: 'Cute Font', 'Comic Sans MS', cursive;
+    background-color: #FFE4E1;  /* Soft pastel pink */
+    color: #6A5ACD;  /* Soft purple for text */
     margin: 0;
     padding: 0;
     text-align: center;
+    line-height: 1.6;
 }
 
-/* Header styling */
+/* Sparkly Header */
 header {
-    background-color: #0077cc;
+    background-color: #FF69B4;  /* Hot pink */
     color: white;
     padding: 20px;
+    box-shadow: 0 4px 6px rgba(255, 105, 180, 0.2);
+    border-bottom: 3px solid #FFC0CB;  /* Light pink border */
 }
 
 nav ul {
@@ -29,42 +32,86 @@ nav ul li a {
     color: white;
     text-decoration: none;
     font-weight: bold;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
 nav ul li a:hover {
-    text-decoration: underline;
+    color: #FFB6C1;  /* Light pink on hover */
+    transform: scale(1.1);
 }
 
-/* Sections */
+nav ul li a::after {
+    content: '✿';  /* Cute flower after links */
+    display: inline-block;
+    margin-left: 5px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+nav ul li a:hover::after {
+    opacity: 1;
+}
+
+/* Cute Sections */
 section {
     margin: 20px auto;
-    padding: 20px;
+    padding: 30px;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 15px rgba(255, 105, 180, 0.2);
     width: 60%;
+    border: 3px solid #FFC0CB;  /* Cute pink border */
+    background: linear-gradient(to bottom right, #FFFFFF, #FFF0F5);  /* Soft gradient */
 }
 
-/* Button styling */
+/* Adorable Buttons */
 button {
-    background-color: #0077cc;
+    background-color: #FF69B4;  /* Hot pink */
     color: white;
-    border: none;
-    padding: 10px 20px;
+    border: 2px solid #FFC0CB;  /* Light pink border */
+    padding: 12px 25px;
     font-size: 16px;
     cursor: pointer;
-    border-radius: 5px;
-    transition: background 0.3s;
+    border-radius: 25px;  /* More rounded */
+    transition: all 0.3s ease;
+    font-weight: bold;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 6px rgba(255, 105, 180, 0.3);
 }
 
 button:hover {
-    background-color: #005fa3;
+    background-color: #FFC0CB;  /* Light pink on hover */
+    transform: scale(1.05);
+    box-shadow: 0 6px 8px rgba(255, 105, 180, 0.4);
 }
 
-/* Footer */
+/* Cute Footer */
 footer {
-    background-color: #0077cc;
+    background-color: #FF69B4;  /* Hot pink */
     color: white;
-    padding: 10px;
+    padding: 15px;
     margin-top: 20px;
+    border-top: 3px solid #FFC0CB;
+    font-family: 'Comic Sans MS', cursive;
+}
+
+/* Extra Cute Touches */
+::selection {
+    background-color: #FFB6C1;  /* Light pink selection */
+    color: white;
+}
+
+/* Cute Scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FFF0F5;  /* Lavender blush */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #FF69B4;  /* Hot pink */
+    border-radius: 6px;
 }
