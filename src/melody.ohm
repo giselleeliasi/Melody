@@ -101,5 +101,7 @@ Melody {
               | for | in | break | return | some | no | random | on | off
   id          = ~keyword letter alnum*
 
+  relop      = "<=" | "<" | "==" | "!=" | ">=" | ">"
+
   space      += "//" (~"\n" any)*                             --comment
 }
