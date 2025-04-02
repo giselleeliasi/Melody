@@ -1,7 +1,6 @@
 export default function generate(program) {
   const output = [];
 
-  // Map to handle name mangling for JavaScript compatibility
   const targetName = ((mapping) => {
     return (entity) => {
       if (!mapping.has(entity)) {
@@ -14,24 +13,21 @@ export default function generate(program) {
   const gen = (node) => generators?.[node?.kind]?.(node) ?? node;
 
   const generators = {
-    // Program structure
     Program(p) {
       p.compositions.forEach(gen);
     },
 
-    // Declarations
     NoteDecl(d) {
-      const decl = d.variable.mutable ? "let" : "const";
-      output.push(`${decl} ${gen(d.variable)} = ${gen(d.initializer)};`);
+      output.push(
+        `${d.isConst ? "const" : "let"} ${gen(d.name)} = ${gen(d.initializer)};`
+      );
     },
 
     GrandDecl(d) {
-      output.push(`class ${gen(d.grandType)} {`);
-      output.push(
-        `  constructor(${d.grandType.fields.map((f) => gen(f)).join(", ")}) {`
-      );
-      d.grandType.fields.forEach((f) => {
-        output.push(`    this.${gen(f)} = ${gen(f)};`);
+      output.push(`class ${d.name} {`);
+      output.push(`  constructor(${d.fields.map((f) => f.name).join(", ")}) {`);
+      d.fields.forEach((f) => {
+        output.push(`    this.${f.name} = ${f.name};`);
       });
       output.push(`  }`);
       output.push(`}`);
@@ -39,15 +35,11 @@ export default function generate(program) {
 
     MeasureDecl(d) {
       output.push(
-        `function ${gen(d.measure)}(${d.measure.parameters
-          .map(gen)
-          .join(", ")}) {`
+        `function ${d.name}(${d.params.map((p) => p.name).join(", ")}) {`
       );
-      d.measure.body.forEach(gen);
-      if (d.measure.returnType !== "void") {
-        output.push(
-          `return ${gen(d.measure.body[d.measure.body.length - 1])};`
-        );
+      d.body.forEach(gen);
+      if (d.returnType.name !== "void") {
+        output.push(`return ${gen(d.body[d.body.length - 1])};`);
       }
       output.push("}");
     },
