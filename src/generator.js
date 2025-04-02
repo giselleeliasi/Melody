@@ -20,25 +20,24 @@ export default function generate(program) {
     },
 
     // Declarations
-    NoteDeclaration(d) {
-      output.push(`let ${gen(d.variable)} = ${gen(d.initializer)};`);
+    NoteDecl(d) {
+      const decl = d.variable.mutable ? "let" : "const";
+      output.push(`${decl} ${gen(d.variable)} = ${gen(d.initializer)};`);
     },
 
-    GrandDeclaration(d) {
+    GrandDecl(d) {
       output.push(`class ${gen(d.grandType)} {`);
       output.push(
-        `  constructor(${d.grandType.fields
-          .map((f) => gen(f.name))
-          .join(", ")}) {`
+        `  constructor(${d.grandType.fields.map((f) => gen(f)).join(", ")}) {`
       );
       d.grandType.fields.forEach((f) => {
-        output.push(`    this.${gen(f.name)} = ${gen(f.name)};`);
+        output.push(`    this.${gen(f)} = ${gen(f)};`);
       });
       output.push(`  }`);
       output.push(`}`);
     },
 
-    MeasureDeclaration(d) {
+    MeasureDecl(d) {
       output.push(
         `function ${gen(d.measure)}(${d.measure.parameters
           .map(gen)
@@ -67,7 +66,7 @@ export default function generate(program) {
       output.push(`${gen(s.variable)}${s.op};`);
     },
 
-    AssignmentStatement(s) {
+    AssignStatement(s) {
       output.push(`${gen(s.target)} = ${gen(s.source)};`);
     },
 
@@ -88,10 +87,10 @@ export default function generate(program) {
     },
 
     // Control structures
-    IfStatement(s) {
+    IfStmt(s) {
       output.push(`if (${gen(s.test)}) {`);
       s.consequent.forEach(gen);
-      if (s.alternate?.kind?.endsWith?.("IfStatement")) {
+      if (s.alternate?.kind?.endsWith?.("IfStmt")) {
         output.push("} else");
         gen(s.alternate);
       } else {
@@ -101,25 +100,25 @@ export default function generate(program) {
       }
     },
 
-    ShortIfStatement(s) {
+    ShortIfStmt(s) {
       output.push(`if (${gen(s.test)}) {`);
       s.consequent.forEach(gen);
       output.push("}");
     },
 
-    RepeatWhileStatement(s) {
+    RepeatWhileStmt(s) {
       output.push(`while (${gen(s.test)}) {`);
       s.body.forEach(gen);
       output.push("}");
     },
 
-    TimesStatement(s) {
+    TimesStmt(s) {
       output.push(`for (let i = 0; i < ${gen(s.times)}; i++) {`);
       s.body.forEach(gen);
       output.push("}");
     },
 
-    RangeStatement(s) {
+    RangeStmt(s) {
       const endOp = s.rangeOp === "..." ? "<=" : "<";
       output.push(
         `for (let ${gen(s.variable)} = ${gen(s.start)}; ${gen(
@@ -130,7 +129,7 @@ export default function generate(program) {
       output.push("}");
     },
 
-    ForEachStatement(s) {
+    ForEachStmt(s) {
       output.push(`for (let ${gen(s.element)} of ${gen(s.collection)}) {`);
       s.body.forEach(gen);
       output.push("}");
@@ -138,25 +137,33 @@ export default function generate(program) {
 
     Block(b) {
       output.push("{");
-      b.compositions.forEach(gen);
+      b.statements.forEach(gen);
       output.push("}");
     },
 
     // Expressions
-    ConditionalExpression(e) {
+    ConditionalExp(e) {
       return `(${gen(e.test)} ? ${gen(e.consequent)} : ${gen(e.alternate)})`;
     },
 
-    UnwrapElseExpression(e) {
+    UnwrapElseExp(e) {
       return `(${gen(e.left)} ?? ${gen(e.right)})`;
     },
 
-    BinaryExpression(e) {
+    BinaryExp(e) {
       const op = { "==": "===", "!=": "!==" }[e.op] ?? e.op;
+      // Special case for array equality
+      if (e.op === "==" || e.op === "!=") {
+        if (e.left.type.startsWith("[")) {
+          return `JSON.stringify(${gen(e.left)}) ${op} JSON.stringify(${gen(
+            e.right
+          )})`;
+        }
+      }
       return `(${gen(e.left)} ${op} ${gen(e.right)})`;
     },
 
-    UnaryExpression(e) {
+    UnaryExp(e) {
       if (e.op === "#") {
         return `${gen(e.operand)}.length`;
       } else if (e.op === "some") {
@@ -167,28 +174,28 @@ export default function generate(program) {
       return `${e.op}(${gen(e.operand)})`;
     },
 
-    CallExpression(e) {
+    CallExp(e) {
       return `${gen(e.callee)}(${e.args.map(gen).join(", ")})`;
     },
 
-    SubscriptExpression(e) {
+    SubscriptExp(e) {
       return `${gen(e.array)}[${gen(e.index)}]`;
     },
 
-    MemberExpression(e) {
+    MemberExp(e) {
       return `${gen(e.object)}.${gen(e.field)}`;
     },
 
-    ArrayExpression(e) {
+    ArrayExp(e) {
       return `[${e.elements.map(gen).join(", ")}]`;
     },
 
-    EmptyArrayExpression(e) {
+    EmptyArrayExp(e) {
       return `[]`;
     },
 
     // Literals
-    IntegerLiteral(e) {
+    IntLiteral(e) {
       return e.value;
     },
 

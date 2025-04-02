@@ -1,15 +1,29 @@
+// Base node creator
+function baseNode(kind, properties = {}) {
+  return { kind, ...properties };
+}
+
 // Program Structure
 export function program(compositions) {
   return baseNode("Program", { compositions });
 }
 
 // Declarations
-export function noteDeclaration(variable, initializer) {
-  return baseNode("NoteDeclaration", { variable, initializer });
+export function measureDecl(measure) {
+  return baseNode("MeasureDecl", { measure });
 }
 
-export function grandDeclaration(grandType) {
-  return baseNode("GrandDeclaration", { grandType });
+export function measure(name, parameters, returnType, body) {
+  return baseNode("Measure", {
+    name,
+    parameters,
+    returnType,
+    body,
+  });
+}
+
+export function grandDecl(grandType) {
+  return baseNode("GrandDecl", { grandType });
 }
 
 export function grandType(name, fields) {
@@ -20,24 +34,13 @@ export function field(name, type) {
   return baseNode("Field", { name, type });
 }
 
-export function measureDeclaration(measure) {
-  return baseNode("MeasureDeclaration", { measure });
-}
-
-export function measure(name, parameters, returnType, body) {
-  return baseNode("Measure", {
-    name,
-    parameters,
-    returnType,
-    body,
-    // Track whether all code paths return
-    returns: false,
-  });
-}
-
 // Variables and Parameters
 export function variable(name, type, mutable) {
   return baseNode("Variable", { name, type, mutable });
+}
+
+export function noteDecl(variable, initializer) {
+  return baseNode("NoteDecl", { variable, initializer });
 }
 
 // Statements
@@ -45,8 +48,8 @@ export function bumpStatement(variable, op) {
   return baseNode("BumpStatement", { variable, op });
 }
 
-export function assignmentStatement(target, source) {
-  return baseNode("AssignmentStatement", { target, source });
+export function assignStatement(target, source) {
+  return baseNode("AssignStatement", { target, source });
 }
 
 export function callStatement(call) {
@@ -54,116 +57,86 @@ export function callStatement(call) {
 }
 
 export function breakStatement() {
-  return baseNode("BreakStatement", {});
+  return baseNode("BreakStatement");
 }
 
 export function returnStatement(expression) {
-  const node = baseNode("ReturnStatement", { expression });
-  node.type = expression?.type || "void";
-  return node;
+  return baseNode("ReturnStatement", { expression });
 }
 
 export function shortReturnStatement() {
-  return baseNode("ShortReturnStatement", { type: "void" });
+  return baseNode("ShortReturnStatement");
 }
 
 // Control Structures
-export function ifStatement(test, consequent, alternate) {
-  const node = baseNode("IfStatement", { test, consequent, alternate });
-  // Determine type based on branches
-  node.type = alternate ? consequent.type : "void";
-  return node;
+export function ifStmt(test, consequent, alternate) {
+  return baseNode("IfStmt", { test, consequent, alternate });
 }
 
-export function shortIfStatement(test, consequent) {
-  return baseNode("ShortIfStatement", { test, consequent, type: "void" });
+export function shortIfStmt(test, consequent) {
+  return baseNode("ShortIfStmt", { test, consequent });
 }
 
-export function repeatWhileStatement(test, body) {
-  return baseNode("RepeatWhileStatement", { test, body, type: "void" });
+export function repeatWhileStmt(test, body) {
+  return baseNode("RepeatWhileStmt", { test, body });
 }
 
-export function timesStatement(times, body) {
-  return baseNode("TimesStatement", { times, body, type: "void" });
+export function timesStmt(times, body) {
+  return baseNode("TimesStmt", { times, body });
 }
 
-export function rangeStatement(variable, start, rangeOp, end, body) {
-  return baseNode("RangeStatement", {
-    variable,
-    start,
-    rangeOp,
-    end,
-    body,
-    type: "void",
-  });
+export function rangeStmt(variable, start, rangeOp, end, body) {
+  return baseNode("RangeStmt", { variable, start, rangeOp, end, body });
 }
 
-export function forEachStatement(element, collection, body) {
-  return baseNode("ForEachStatement", {
-    element,
-    collection,
-    body,
-    type: "void",
-  });
+export function forEachStmt(element, collection, body) {
+  return baseNode("ForEachStmt", { element, collection, body });
 }
 
-export function block(compositions) {
-  const node = baseNode("Block", { compositions });
-  // Determine if block returns
-  node.returns = compositions.some((c) => c.returns);
-  node.type = node.returns ? compositions.find((c) => c.returns).type : "void";
-  return node;
+export function block(statements) {
+  return baseNode("Block", { statements });
 }
 
 // Expressions
-export function conditionalExpression(test, consequent, alternate) {
-  return baseNode("ConditionalExpression", {
-    test,
-    consequent,
-    alternate,
-    type: consequent.type,
-  });
+export function conditionalExp(test, consequent, alternate) {
+  return baseNode("ConditionalExp", { test, consequent, alternate });
 }
 
-export function unwrapElseExpression(left, right) {
-  return baseNode("UnwrapElseExpression", {
-    left,
-    right,
-    type: right.type,
-  });
+export function unwrapElseExp(left, right) {
+  return baseNode("UnwrapElseExp", { left, right });
 }
 
-export function binaryExpression(op, left, right, type) {
-  return baseNode("BinaryExpression", { op, left, right, type });
+export function binaryExp(op, left, right, type) {
+  return baseNode("BinaryExp", { op, left, right, type });
 }
 
-export function unaryExpression(op, operand, type) {
-  return baseNode("UnaryExpression", { op, operand, type });
+export function unaryExp(op, operand, type) {
+  return baseNode("UnaryExp", { op, operand, type });
 }
 
-export function callExpression(callee, args, type) {
-  return baseNode("CallExpression", { callee, args, type });
+export function callExp(callee, args, type) {
+  return baseNode("CallExp", { callee, args, type });
 }
 
-export function subscriptExpression(array, index, type) {
-  return baseNode("SubscriptExpression", { array, index, type });
+export function subscriptExp(array, index, type) {
+  return baseNode("SubscriptExp", { array, index, type });
 }
 
-export function memberExpression(object, field, type) {
-  return baseNode("MemberExpression", { object, field, type });
+export function memberExp(object, field, type) {
+  return baseNode("MemberExp", { object, field, type });
 }
 
-export function arrayExpression(elements, type) {
-  return baseNode("ArrayExpression", { elements, type });
+export function arrayExp(elements, type) {
+  return baseNode("ArrayExp", { elements, type });
 }
 
-export function emptyArrayExpression(type) {
-  return baseNode("EmptyArrayExpression", { type: `[${type}]` });
+export function emptyArrayExp(type) {
+  return baseNode("EmptyArrayExp", { type: `[${type}]` });
 }
 
 // Literals
-export function integerLiteral(value) {
-  return baseNode("IntegerLiteral", { value, type: "number" });
+export function intLiteral(value) {
+  return baseNode("IntLiteral", { value, type: "number" });
 }
 
 export function floatLiteral(value) {
@@ -179,9 +152,7 @@ export function booleanLiteral(value) {
 }
 
 export function nilLiteral(type) {
-  return baseNode("NilLiteral", {
-    type: type.endsWith("?") ? type : `${type}?`,
-  });
+  return baseNode("NilLiteral", { type: `${type}?` });
 }
 
 // Type Utilities
