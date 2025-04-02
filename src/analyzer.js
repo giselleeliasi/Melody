@@ -20,11 +20,7 @@ export default function analyze(match) {
     }
 
     newChildContext({ inLoop = false, inFunction = false } = {}) {
-      return new Context(
-        this,
-        inLoop || this.inLoop,
-        inFunction || this.inFunction
-      );
+      return new Context(this, inLoop, inFunction);
     }
   }
 
@@ -72,7 +68,7 @@ export default function analyze(match) {
 
   function mustBeArrayOrString(e, at) {
     must(
-      e.type === "string" || e.type.endsWith("]"),
+      e.type === "string" || e.type.endsWith("[]"),
       `Expected string or array, got ${e.type}`,
       at
     );
@@ -96,7 +92,7 @@ export default function analyze(match) {
   function isMutable(variable) {
     return (
       variable.mutable ||
-      (variable.kind === "SubscriptExp" && isMutable(variable.array))
+      (variable.kind === "SubscriptExpression" && isMutable(variable.array))
     );
   }
 
@@ -121,13 +117,11 @@ export default function analyze(match) {
       const dest = target.analyze();
       mustBeAssignable(source, dest.type, target);
       mustBeMutable(dest, target);
-      return core.assignStatement(dest, source);
+      return core.assignmentStatement(dest, source);
     },
 
     Composition_call(exp, _semi) {
-      const call = exp.analyze();
-      must(call.kind === "CallExp", `Expected function call`, exp);
-      return core.callStatement(call);
+      return core.callStatement(exp.analyze());
     },
 
     Composition_break(_break, _semi) {
@@ -156,7 +150,7 @@ export default function analyze(match) {
         mutable
       );
       context.add(id.sourceString, variable);
-      return core.noteDecl(variable, initializer);
+      return core.noteDeclaration(variable, initializer);
     },
 
     GrandDecl(_grand, id, _open, fields, _close) {
@@ -164,11 +158,11 @@ export default function analyze(match) {
       const fieldList = fields.children.map((f) => f.analyze());
       const grandType = core.grandType(id.sourceString, fieldList);
       context.add(id.sourceString, grandType);
-      return core.grandDecl(grandType);
+      return core.grandDeclaration(grandType);
     },
 
     Field(id, _colon, type) {
-      return core.field(id.sourceString, type.analyze());
+      return core.field(id.sourceString, type.sourceString);
     },
 
     MeasureDecl(_measure, id, params, returnType, block) {
@@ -177,7 +171,8 @@ export default function analyze(match) {
       context = context.newChildContext({ inFunction: true });
 
       const parameters = params.analyze();
-      const returnTypeNode = returnType.child(1)?.child(0)?.analyze() || "void";
+      const returnTypeNode =
+        returnType.child(1)?.child(0)?.sourceString || "void";
       const body = block.analyze();
 
       context = oldContext;
@@ -189,7 +184,7 @@ export default function analyze(match) {
         body
       );
       context.add(id.sourceString, measure);
-      return core.measureDecl(measure);
+      return core.measureDeclaration(measure);
     },
 
     Params(_open, params, _close) {
@@ -198,13 +193,13 @@ export default function analyze(match) {
 
     Param(id, _colon, type) {
       mustNotAlreadyBeDeclared(id.sourceString, id);
-      const paramType = type.analyze();
+      const paramType = type.sourceString;
       const param = core.variable(id.sourceString, paramType, false);
       context.add(id.sourceString, param);
       return param;
     },
 
-    Type_optional(type, _qmark) {
+    Type_optional(type) {
       return `${type.analyze()}?`;
     },
 
@@ -234,7 +229,7 @@ export default function analyze(match) {
       context = context.newChildContext();
       const alternate = block2.analyze();
       context = context.parent;
-      return core.ifStmt(test, consequent, alternate);
+      return core.ifStatement(test, consequent, alternate);
     },
 
     IfStmt_elsif(_if, exp, block, _else, trailingIf) {
@@ -244,7 +239,7 @@ export default function analyze(match) {
       const consequent = block.analyze();
       context = context.parent;
       const alternate = trailingIf.analyze();
-      return core.ifStmt(test, consequent, alternate);
+      return core.ifStatement(test, consequent, alternate);
     },
 
     IfStmt_short(_if, exp, block) {
@@ -253,7 +248,7 @@ export default function analyze(match) {
       context = context.newChildContext();
       const consequent = block.analyze();
       context = context.parent;
-      return core.shortIfStmt(test, consequent);
+      return core.shortIfStatement(test, consequent);
     },
 
     RepeatStmt_repeatWhile(_repeatWhile, exp, block) {
@@ -262,7 +257,7 @@ export default function analyze(match) {
       context = context.newChildContext({ inLoop: true });
       const body = block.analyze();
       context = context.parent;
-      return core.repeatWhileStmt(test, body);
+      return core.repeatWhileStatement(test, body);
     },
 
     RepeatStmt_times(_repeat, exp, block) {
@@ -271,7 +266,7 @@ export default function analyze(match) {
       context = context.newChildContext({ inLoop: true });
       const body = block.analyze();
       context = context.parent;
-      return core.timesStmt(times, body);
+      return core.timesStatement(times, body);
     },
 
     RepeatStmt_range(_for, id, _in, start, rangeOp, end, block) {
@@ -288,7 +283,7 @@ export default function analyze(match) {
       const body = block.analyze();
       context = context.parent;
 
-      return core.rangeStmt(
+      return core.rangeStatement(
         counter,
         startExp,
         rangeOp.sourceString,
@@ -300,23 +295,24 @@ export default function analyze(match) {
     RepeatStmt_collection(_for, id, _in, exp, block) {
       mustNotAlreadyBeDeclared(id.sourceString, id);
       const collection = exp.analyze();
-      mustBeArrayOrString(collection, exp);
+      must(collection.type.startsWith("["), `Expected array type`, exp);
 
       context = context.newChildContext({ inLoop: true });
-      const elementType = collection.type.startsWith("[")
-        ? collection.type.slice(1, -1)
-        : "string";
-      const element = core.variable(id.sourceString, elementType, true);
+      const element = core.variable(
+        id.sourceString,
+        collection.type.slice(1, -1),
+        true
+      );
       context.add(id.sourceString, element);
 
       const body = block.analyze();
       context = context.parent;
 
-      return core.forEachStmt(element, collection, body);
+      return core.forEachStatement(element, collection, body);
     },
 
     Block(_open, compositions, _close) {
-      return core.block(compositions.children.map((c) => c.analyze()));
+      return compositions.children.map((c) => c.analyze());
     },
 
     Exp_conditional(cond, _qmark, thenExp, _colon, elseExp) {
@@ -325,7 +321,7 @@ export default function analyze(match) {
       const thenBranch = thenExp.analyze();
       const elseBranch = elseExp.analyze();
       mustBeSameType(thenBranch, elseBranch, elseExp);
-      return core.conditionalExp(condition, thenBranch, elseBranch);
+      return core.conditionalExpression(condition, thenBranch, elseBranch);
     },
 
     Exp1_unwrapelse(left, _op, right) {
@@ -333,7 +329,7 @@ export default function analyze(match) {
       must(leftExp.type.endsWith("?"), `Expected optional type`, left);
       const rightExp = right.analyze();
       mustBeSameType({ type: leftExp.type.slice(0, -1) }, rightExp, right);
-      return core.unwrapElseExp(leftExp, rightExp);
+      return core.unwrapElseExpression(leftExp, rightExp);
     },
 
     Exp2_or(left, _op, right) {
@@ -341,7 +337,7 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeBoolean(leftExp, left);
       mustBeBoolean(rightExp, right);
-      return core.binaryExp("||", leftExp, rightExp, "boolean");
+      return core.binaryExpression("||", leftExp, rightExp, "boolean");
     },
 
     Exp2_and(left, _op, right) {
@@ -349,7 +345,7 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeBoolean(leftExp, left);
       mustBeBoolean(rightExp, right);
-      return core.binaryExp("&&", leftExp, rightExp, "boolean");
+      return core.binaryExpression("&&", leftExp, rightExp, "boolean");
     },
 
     Exp3_bitor(left, _op, right) {
@@ -357,7 +353,7 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeNumeric(leftExp, left);
       mustBeNumeric(rightExp, right);
-      return core.binaryExp("|", leftExp, rightExp, "number");
+      return core.binaryExpression("|", leftExp, rightExp, "number");
     },
 
     Exp3_bitxor(left, _op, right) {
@@ -365,7 +361,7 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeNumeric(leftExp, left);
       mustBeNumeric(rightExp, right);
-      return core.binaryExp("^", leftExp, rightExp, "number");
+      return core.binaryExpression("^", leftExp, rightExp, "number");
     },
 
     Exp3_bitand(left, _op, right) {
@@ -373,20 +369,24 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeNumeric(leftExp, left);
       mustBeNumeric(rightExp, right);
-      return core.binaryExp("&", leftExp, rightExp, "number");
+      return core.binaryExpression("&", leftExp, rightExp, "number");
     },
 
     Exp4_compare(left, op, right) {
       const leftExp = left.analyze();
       const rightExp = right.analyze();
       if (op.sourceString === "==" || op.sourceString === "!=") {
-        // Allow comparison between different types
+        mustBeSameType(leftExp, rightExp, op);
       } else {
         mustBeNumericOrString(leftExp, left);
         mustBeNumericOrString(rightExp, right);
-        mustBeSameType(leftExp, rightExp, right);
       }
-      return core.binaryExp(op.sourceString, leftExp, rightExp, "boolean");
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        "boolean"
+      );
     },
 
     Exp5_shift(left, op, right) {
@@ -394,28 +394,36 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeNumeric(leftExp, left);
       mustBeNumeric(rightExp, right);
-      return core.binaryExp(op.sourceString, leftExp, rightExp, "number");
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        "number"
+      );
     },
 
     Exp6_add(left, op, right) {
       const leftExp = left.analyze();
       const rightExp = right.analyze();
-      if (op.sourceString === "+") {
-        if (leftExp.type === "string" || rightExp.type === "string") {
-          return core.binaryExp("+", leftExp, rightExp, "string");
-        }
-      }
-      mustBeNumeric(leftExp, left);
-      mustBeNumeric(rightExp, right);
-      return core.binaryExp(op.sourceString, leftExp, rightExp, "number");
+      mustBeSameType(leftExp, rightExp, right);
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        leftExp.type
+      );
     },
 
     Exp7_multiply(left, op, right) {
       const leftExp = left.analyze();
       const rightExp = right.analyze();
-      mustBeNumeric(leftExp, left);
-      mustBeNumeric(rightExp, right);
-      return core.binaryExp(op.sourceString, leftExp, rightExp, "number");
+      mustBeSameType(leftExp, rightExp, right);
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        leftExp.type
+      );
     },
 
     Exp8_power(left, _op, right) {
@@ -423,7 +431,7 @@ export default function analyze(match) {
       const rightExp = right.analyze();
       mustBeNumeric(leftExp, left);
       mustBeNumeric(rightExp, right);
-      return core.binaryExp("**", leftExp, rightExp, "number");
+      return core.binaryExpression("**", leftExp, rightExp, "number");
     },
 
     Exp9_unary(op, operand) {
@@ -431,21 +439,19 @@ export default function analyze(match) {
       switch (op.sourceString) {
         case "#":
           mustBeArrayOrString(exp, operand);
-          return core.unaryExp("#", exp, "number");
+          return core.unaryExpression("#", exp, "number");
         case "-":
           mustBeNumeric(exp, operand);
-          return core.unaryExp("-", exp, "number");
+          return core.unaryExpression("-", exp, "number");
         case "!":
           mustBeBoolean(exp, operand);
-          return core.unaryExp("!", exp, "boolean");
+          return core.unaryExpression("!", exp, "boolean");
         case "some":
           must(!exp.type.endsWith("?"), `Already an optional type`, operand);
-          return core.unaryExp("some", exp, `${exp.type}?`);
+          return core.unaryExpression("some", exp, `${exp.type}?`);
         case "random":
           mustBeNumeric(exp, operand);
-          return core.unaryExp("random", exp, "number");
-        default:
-          throw new Error(`Unknown unary operator: ${op.sourceString}`);
+          return core.unaryExpression("random", exp, "number");
       }
     },
 
@@ -457,7 +463,7 @@ export default function analyze(match) {
 
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();
-      must(func.kind === "Measure", `${func.name} not a function`, fun);
+      must(func.kind === "Measure", `Expected function`, fun);
       const argExps = args.asIteration().children.map((a) => a.analyze());
       must(
         argExps.length === func.parameters.length,
@@ -467,18 +473,15 @@ export default function analyze(match) {
       argExps.forEach((arg, i) => {
         mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
       });
-      return core.callExp(func, argExps, func.returnType);
+      return core.callExpression(func, argExps, func.returnType);
     },
 
     Exp9_subscript(array, _open, index, _close) {
       const arr = array.analyze();
       const idx = index.analyze();
-      mustBeArrayOrString(arr, array);
+      must(arr.type.startsWith("["), `Expected array type`, array);
       mustBeNumeric(idx, index);
-      const elementType = arr.type.startsWith("[")
-        ? arr.type.slice(1, -1)
-        : "string";
-      return core.subscriptExp(arr, idx, elementType);
+      return core.subscriptExpression(arr, idx, arr.type.slice(1, -1));
     },
 
     Exp9_member(object, _dot, id) {
@@ -486,31 +489,24 @@ export default function analyze(match) {
       must(obj.kind === "Grand", `Expected grand type`, object);
       const field = obj.fields.find((f) => f.name === id.sourceString);
       must(field, `No such field: ${id.sourceString}`, id);
-      return core.memberExp(obj, field, field.type);
-    },
-
-    Exp9_id(_first, _rest) {
-      const name = this.sourceString;
-      const entity = context.lookup(name);
-      mustBeDeclared(name, this);
-      return entity;
+      return core.memberExpression(obj, field, field.type);
     },
 
     Exp9_emptyarray(type, _open, _close) {
       const typeStr = type.analyze();
-      return core.emptyArrayExp(typeStr);
+      return core.emptyArrayExpression(typeStr);
     },
 
     Exp9_arrayexp(_open, elements, _close) {
       const exps = elements.asIteration().children.map((e) => e.analyze());
       if (exps.length > 0) {
         const type = exps[0].type;
-        for (let i = 1; i < exps.length; i++) {
-          mustBeSameType({ type }, exps[i], elements.children[i]);
-        }
-        return core.arrayExp(exps, `[${type}]`);
+        exps.slice(1).forEach((e) => {
+          mustBeSameType({ type }, e, elements);
+        });
+        return core.arrayExpression(exps, `[${type}]`);
       }
-      return core.arrayExp([], "[any]");
+      return core.arrayExpression([], "[any]");
     },
 
     Exp9_parens(_open, exp, _close) {
@@ -518,23 +514,40 @@ export default function analyze(match) {
     },
 
     intlit(_digits) {
-      return core.integerLiteral(parseInt(this.sourceString));
+      const node = core.integerLiteral(parseInt(this.sourceString));
+      node.type = "number";
+      return node;
     },
 
     floatlit(_int, _dot, _frac, _e, _sign, _exp) {
-      return core.floatLiteral(parseFloat(this.sourceString));
+      const node = core.floatLiteral(parseFloat(this.sourceString));
+      node.type = "number";
+      return node;
     },
 
     stringlit(_open, chars, _close) {
-      return core.stringLiteral(chars.sourceString);
+      const node = core.stringLiteral(chars.sourceString);
+      node.type = "string";
+      return node;
     },
 
     on(_) {
-      return core.booleanLiteral(true);
+      const node = core.booleanLiteral(true);
+      node.type = "boolean";
+      return node;
     },
 
     off(_) {
-      return core.booleanLiteral(false);
+      const node = core.booleanLiteral(false);
+      node.type = "boolean";
+      return node;
+    },
+
+    id(_first, _rest) {
+      const name = this.sourceString;
+      const entity = context.lookup(name);
+      mustBeDeclared(name, this);
+      return entity;
     },
   });
 

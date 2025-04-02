@@ -1,173 +1,176 @@
-// Base node creator
-function baseNode(kind, properties = {}) {
-  return { kind, ...properties };
+export function Program(compositions) {
+  return { kind: "Program", compositions };
 }
 
-// Program Structure
-export function program(compositions) {
-  return baseNode("Program", { compositions });
+export function NoteDecl(isConst, name, initializer) {
+  return { kind: "NoteDecl", isConst, name, initializer };
 }
 
-// Declarations
-export function measureDecl(measure) {
-  return baseNode("MeasureDecl", { measure });
+export function GrandDecl(name, fields) {
+  return { kind: "GrandDecl", name, fields };
 }
 
-export function measure(name, parameters, returnType, body) {
-  return baseNode("Measure", {
-    name,
-    parameters,
-    returnType,
-    body,
-  });
+export function Field(name, type) {
+  return { kind: "Field", name, type };
 }
 
-export function grandDecl(grandType) {
-  return baseNode("GrandDecl", { grandType });
+export function MeasureDecl(name, params, returnType, body) {
+  return { kind: "MeasureDecl", name, params, returnType, body };
 }
 
-export function grandType(name, fields) {
-  return baseNode("GrandType", { name, fields });
+export function Param(name, type) {
+  return { kind: "Param", name, type };
 }
 
-export function field(name, type) {
-  return baseNode("Field", { name, type });
+export const booleanType = "boolean";
+export const intType = "int";
+export const floatType = "float";
+export const stringType = "string";
+export const voidType = "void";
+export const anyType = "any";
+
+export function optionalType(baseType) {
+  return { kind: "OptionalType", baseType };
 }
 
-// Variables and Parameters
-export function variable(name, type, mutable) {
-  return baseNode("Variable", { name, type, mutable });
+export function arrayType(baseType) {
+  return { kind: "ArrayType", baseType };
 }
 
-export function noteDecl(variable, initializer) {
-  return baseNode("NoteDecl", { variable, initializer });
+export function functionType(paramTypes, returnType) {
+  return { kind: "FunctionType", paramTypes, returnType };
 }
 
-// Statements
-export function bumpStatement(variable, op) {
-  return baseNode("BumpStatement", { variable, op });
+export function bump(variable, op) {
+  return { kind: "Bump", variable, op };
 }
 
-export function assignStatement(target, source) {
-  return baseNode("AssignStatement", { target, source });
+export function assign(target, source) {
+  return { kind: "Assign", target, source };
 }
 
-export function callStatement(call) {
-  return baseNode("CallStatement", { call });
+export const Break = { kind: "Break" };
+
+export function Return(expression) {
+  return { kind: "Return", expression };
 }
 
-export function breakStatement() {
-  return baseNode("BreakStatement");
+export const ShortReturn = { kind: "ShortReturn" };
+
+export function IfStmt(test, consequent, alternate) {
+  return { kind: "IfStmt", test, consequent, alternate };
 }
 
-export function returnStatement(expression) {
-  return baseNode("ReturnStatement", { expression });
+export function ShortIfStmt(test, consequent) {
+  return { kind: "ShortIfStmt", test, consequent };
 }
 
-export function shortReturnStatement() {
-  return baseNode("ShortReturnStatement");
+export function ElsifStmt(test, consequent, alternate) {
+  return { kind: "ElsifStmt", test, consequent, alternate };
 }
 
-// Control Structures
-export function ifStmt(test, consequent, alternate) {
-  return baseNode("IfStmt", { test, consequent, alternate });
+export function RepeatWhileStmt(test, body) {
+  return { kind: "RepeatWhileStmt", test, body };
 }
 
-export function shortIfStmt(test, consequent) {
-  return baseNode("ShortIfStmt", { test, consequent });
+export function RepeatStmt(count, body) {
+  return { kind: "RepeatStmt", count, body };
 }
 
-export function repeatWhileStmt(test, body) {
-  return baseNode("RepeatWhileStmt", { test, body });
+export function ForRangeStmt(iterator, low, op, high, body) {
+  return { kind: "ForRangeStmt", iterator, low, op, high, body };
 }
 
-export function timesStmt(times, body) {
-  return baseNode("TimesStmt", { times, body });
+export function ForStmt(iterator, collection, body) {
+  return { kind: "ForStmt", iterator, collection, body };
 }
 
-export function rangeStmt(variable, start, rangeOp, end, body) {
-  return baseNode("RangeStmt", { variable, start, rangeOp, end, body });
+export function Conditional(test, consequent, alternate, type) {
+  return { kind: "Conditional", test, consequent, alternate, type };
 }
 
-export function forEachStmt(element, collection, body) {
-  return baseNode("ForEachStmt", { element, collection, body });
+export function Binary(op, left, right, type) {
+  return { kind: "Binary", op, left, right, type };
 }
 
-export function block(statements) {
-  return baseNode("Block", { statements });
+export function Unary(op, operand, type) {
+  return { kind: "Unary", op, operand, type };
 }
 
-// Expressions
-export function conditionalExp(test, consequent, alternate) {
-  return baseNode("ConditionalExp", { test, consequent, alternate });
+export function no(baseType) {
+  return { kind: "no", baseType, type: optionalType(baseType) };
 }
 
-export function unwrapElseExp(left, right) {
-  return baseNode("UnwrapElseExp", { left, right });
+export function Subscript(array, index, optional) {
+  return {
+    kind: "Subscript",
+    array,
+    index,
+    optional,
+    type: array.type.baseType,
+  };
 }
 
-export function binaryExp(op, left, right, type) {
-  return baseNode("BinaryExp", { op, left, right, type });
+export function ArrayExp(elements) {
+  return { kind: "ArrayExp", elements, type: arrayType(elements[0].type) };
 }
 
-export function unaryExp(op, operand, type) {
-  return baseNode("UnaryExp", { op, operand, type });
+export function EmptyArray(type) {
+  return { kind: "EmptyArray", type };
 }
 
-export function callExp(callee, args, type) {
-  return baseNode("CallExp", { callee, args, type });
+export function Member(object, op, field, optional) {
+  return { kind: "Member", object, op, field, optional, type: field.type };
 }
 
-export function subscriptExp(array, index, type) {
-  return baseNode("SubscriptExp", { array, index, type });
+export function Call(callee, args, optional) {
+  return { kind: "Call", callee, args, optional, type: callee.type.returnType };
 }
 
-export function memberExp(object, field, type) {
-  return baseNode("MemberExp", { object, field, type });
-}
-
-export function arrayExp(elements, type) {
-  return baseNode("ArrayExp", { elements, type });
-}
-
-export function emptyArrayExp(type) {
-  return baseNode("EmptyArrayExp", { type: `[${type}]` });
+export function ConstructorCall(type, args) {
+  return { kind: "ConstructorCall", type, args, type: type };
 }
 
 // Literals
-export function intLiteral(value) {
-  return baseNode("IntLiteral", { value, type: "number" });
+export function intlit(value) {
+  return { kind: "intlit", value, type: intType };
 }
 
-export function floatLiteral(value) {
-  return baseNode("FloatLiteral", { value, type: "number" });
+export function floatlit(value) {
+  return { kind: "floatlit", value, type: floatType };
 }
 
-export function stringLiteral(value) {
-  return baseNode("StringLiteral", { value, type: "string" });
+export function stringlit(value) {
+  return { kind: "stringlit", value, type: stringType };
 }
 
-export function booleanLiteral(value) {
-  return baseNode("BooleanLiteral", { value, type: "boolean" });
+export function on() {
+  return { kind: "on", type: booleanType };
 }
 
-export function nilLiteral(type) {
-  return baseNode("NilLiteral", { type: `${type}?` });
+export function off() {
+  return { kind: "off", type: booleanType };
 }
 
-// Type Utilities
-export function isArrayType(type) {
-  return type.startsWith("[") && type.endsWith("]");
+export function id(name, type) {
+  return { kind: "id", name, type };
 }
 
-export function getArrayElementType(type) {
-  return type.slice(1, -1);
-}
+// Standard library for Melody
+export const standardLibrary = Object.freeze({
+  int: intType,
+  float: floatType,
+  boolean: booleanType,
+  string: stringType,
+  void: voidType,
+  any: anyType,
+  on: on(),
+  off: off(),
+  // Add music-specific intrinsics as needed
+});
 
-export function isOptionalType(type) {
-  return type.endsWith("?");
-}
-
-export function getBaseType(type) {
-  return isOptionalType(type) ? type.slice(0, -1) : type;
-}
+// Monkey patching for literals
+Boolean.prototype.type = booleanType;
+Number.prototype.type = floatType;
+BigInt.prototype.type = intType;
+String.prototype.type = stringType;
