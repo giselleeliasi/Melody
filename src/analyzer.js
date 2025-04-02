@@ -4,352 +4,552 @@ export default function analyze(match) {
   const grammar = match.matcher.grammar;
 
   class Context {
-    constructor(parent = null, inLoop = false) {
+    constructor(parent = null, inLoop = false, inFunction = false) {
+      this.parent = parent;
       this.locals = new Map();
       this.inLoop = inLoop;
-      this.parent = parent;
+      this.inFunction = inFunction;
     }
+
     add(name, entity) {
       this.locals.set(name, entity);
     }
-    has(name) {
-      return this.locals.has(name);
-    }
+
     lookup(name) {
-      return this.locals.get(name) ?? (this.parent && this.parent.lookup(name));
+      return this.locals.get(name) ?? this.parent?.lookup(name);
     }
-    newChildContext(inLoop = false) {
-      return new Context(this, inLoop);
+
+    newChildContext({ inLoop = false, inFunction = false } = {}) {
+      return new Context(this, inLoop, inFunction);
     }
   }
 
-  // THIS IS THE CURRENT CONTEXT THAT WE ARE TRACKING
   let context = new Context();
 
-  const target = [];
-
-  function check(condition, message, parseTreeNode) {
+  function must(condition, message, at) {
     if (!condition) {
-      throw new Error(
-        `${parseTreeNode.source.getLineAndColumnMessage()} ${message}`
-      );
+      const prefix = at.source.getLineAndColumnMessage();
+      throw new Error(`${prefix} ${message}`);
     }
   }
 
-  function checkNumber(e, parseTreeNode) {
-    check(e.type === "number", `Expected number`, parseTreeNode);
+  function mustNotAlreadyBeDeclared(name, at) {
+    must(!context.locals.has(name), `Identifier ${name} already declared`, at);
   }
 
-  function checkBoolean(e, parseTreeNode) {
-    check(e.type === "boolean", `Expected boolean`, parseTreeNode);
+  function mustBeDeclared(name, at) {
+    must(context.lookup(name), `Identifier ${name} not declared`, at);
   }
 
-  function checkNumberOrString(e, parseTreeNode) {
-    check(
+  function mustBeType(entity, at) {
+    must(
+      entity?.kind === "GrandType" ||
+        ["number", "boolean", "string"].includes(entity),
+      `Expected a type`,
+      at
+    );
+  }
+
+  function mustBeNumeric(e, at) {
+    must(e.type === "number", `Expected number, got ${e.type}`, at);
+  }
+
+  function mustBeBoolean(e, at) {
+    must(e.type === "boolean", `Expected boolean, got ${e.type}`, at);
+  }
+
+  function mustBeNumericOrString(e, at) {
+    must(
       e.type === "number" || e.type === "string",
-      `Expected number or string`,
-      parseTreeNode
+      `Expected number or string, got ${e.type}`,
+      at
     );
   }
 
-  function checkArrayOrString(e, parseTreeNode) {
-    check(
-      // TODO FIX DISGUSTING HACK BELOW
+  function mustBeArrayOrString(e, at) {
+    must(
       e.type === "string" || e.type.endsWith("[]"),
-      `Expected string or array`,
-      parseTreeNode
+      `Expected string or array, got ${e.type}`,
+      at
     );
   }
 
-  function checkNotNil(e, parseTreeNode) {
-    check(
-      e.kind !== "NilLiteral",
-      `Cannot use nil without a type`,
-      parseTreeNode
-    );
+  function mustBeSameType(a, b, at) {
+    must(a.type === b.type, `Type mismatch: ${a.type} vs ${b.type}`, at);
   }
 
-  function checkSameTypes(x, y, parseTreeNode) {
-    check(x.type === y.type, `Operands must have the same type`, parseTreeNode);
-  }
-
-  function checkAssignable(source, destType, parseTreeNode) {
-    // Example: source = nil, destType = "number?"
-    // Example: source = 50, destType = "number?"
-    check(
-      (source.kind === "NilLiteral" && destType.endsWith("?")) ||
-        source.type === destType ||
-        destType === `${source.type}?`,
-      `Cannot assign ${source.type} to ${destType}`,
-      parseTreeNode
-    );
-  }
-
-  function checkAllElementsHaveSameType(elements, parseTreeNode) {
-    if (elements.length > 0) {
-      const type = elements[0].type;
-      for (const e of elements) {
-        check(
-          e.type === type,
-          `All elements must have the same type`,
-          parseTreeNode
-        );
-      }
-    }
-  }
-
-  function checkArgumentCountAndTypes(parameters, args, parseTreeNode) {
-    check(
-      parameters.length === args.length,
-      `Expected ${parameters.length} argument(s) but ${args.length} passed`,
-      parseTreeNode
-    );
-    for (let i = 0; i < parameters.length; i++) {
-      checkSameTypes(parameters[i], args[i], parseTreeNode);
-    }
-  }
-
-  function checkNotDeclared(name, parseTreeNode) {
-    check(
-      !context.has(name),
-      `Variable already declared: ${name}`,
-      parseTreeNode
+  function mustBeAssignable(from, toType, at) {
+    const fromType = from.type;
+    must(
+      (from.kind === "NilLiteral" && toType.endsWith("?")) ||
+        fromType === toType ||
+        toType === `${fromType}?`,
+      `Cannot assign ${fromType} to ${toType}`,
+      at
     );
   }
 
   function isMutable(variable) {
     return (
       variable.mutable ||
-      (variable.kind == "SubscriptExpression" && isMutable(variable.array))
+      (variable.kind === "SubscriptExpression" && isMutable(variable.array))
     );
   }
 
-  function checkIsMutable(variable, parseTreeNode) {
-    check(
-      isMutable(variable),
-      `Assignment to immutable variable`,
-      parseTreeNode
-    );
+  function mustBeMutable(variable, at) {
+    must(isMutable(variable), `Assignment to immutable variable`, at);
   }
 
   const analyzer = grammar.createSemantics().addOperation("analyze", {
-    Program(statements) {
-      return core.program(statements.children.map((s) => s.analyze()));
+    Program(compositions) {
+      return core.program(compositions.children.map((c) => c.analyze()));
     },
-    Increment(_op, id, _semi) {
-      const variable = id.analyze();
-      checkNumber(variable, id);
-      return core.incrementStatement(variable);
+
+    Composition_bump(exp, op, _semi) {
+      const variable = exp.analyze();
+      mustBeMutable(variable, exp);
+      mustBeNumeric(variable, exp);
+      return core.bumpStatement(variable, op.sourceString);
     },
-    Stmt_break(breakKeyword, _semi) {
-      check(context.inLoop, `Break can only appear in a loop`, breakKeyword);
+
+    Composition_assign(target, _eq, exp, _semi) {
+      const source = exp.analyze();
+      const dest = target.analyze();
+      mustBeAssignable(source, dest.type, target);
+      mustBeMutable(dest, target);
+      return core.assignmentStatement(dest, source);
+    },
+
+    Composition_call(exp, _semi) {
+      return core.callStatement(exp.analyze());
+    },
+
+    Composition_break(_break, _semi) {
+      must(context.inLoop, `Break can only appear in a loop`, _break);
       return core.breakStatement();
     },
-    VarDec_inference(qualifier, id, _eq, exp, _semi) {
-      checkNotDeclared(id.sourceString, id);
+
+    Composition_return(_return, exp, _semi) {
+      must(context.inFunction, `Return can only appear in a function`, _return);
+      const value = exp.analyze();
+      return core.returnStatement(value);
+    },
+
+    Composition_shortreturn(_return, _semi) {
+      must(context.inFunction, `Return can only appear in a function`, _return);
+      return core.shortReturnStatement();
+    },
+
+    NoteDecl(_qualifier, id, _eq, exp, _semi) {
+      mustNotAlreadyBeDeclared(id.sourceString, id);
       const initializer = exp.analyze();
-      checkNotNil(initializer, id);
-      const mutable = qualifier.sourceString === "let";
+      const mutable = _qualifier.sourceString === "let";
       const variable = core.variable(
         id.sourceString,
         initializer.type,
         mutable
       );
       context.add(id.sourceString, variable);
-      return core.variableDeclaration(variable, initializer);
+      return core.noteDeclaration(variable, initializer);
     },
-    VarDec_withtype(qualifier, id, _colon, type, _eq, exp, _semi) {
-      checkNotDeclared(id.sourceString, id);
-      const initializer = exp.analyze();
-      const mutable = qualifier.sourceString === "let";
-      checkAssignable(initializer, type.sourceString, id);
-      const variable = core.variable(
-        id.sourceString,
-        type.sourceString,
-        mutable
-      );
-      context.add(id.sourceString, variable);
-      return core.variableDeclaration(variable, initializer);
+
+    GrandDecl(_grand, id, _open, fields, _close) {
+      mustNotAlreadyBeDeclared(id.sourceString, id);
+      const fieldList = fields.children.map((f) => f.analyze());
+      const grandType = core.grandType(id.sourceString, fieldList);
+      context.add(id.sourceString, grandType);
+      return core.grandDeclaration(grandType);
     },
-    FunDec(_fun, id, params, _eq, exp, _semi) {
-      checkNotDeclared(id.sourceString, id);
-      context = context.newChildContext();
+
+    Field(id, _colon, type) {
+      return core.field(id.sourceString, type.sourceString);
+    },
+
+    MeasureDecl(_measure, id, params, returnType, block) {
+      mustNotAlreadyBeDeclared(id.sourceString, id);
+      const oldContext = context;
+      context = context.newChildContext({ inFunction: true });
+
       const parameters = params.analyze();
-      const body = exp.analyze();
-      context = context.parent;
-      const fun = core.función(id.sourceString, parameters, body.type);
-      context.add(id.sourceString, fun);
-      return core.functionDeclaration(fun, body);
+      const returnTypeNode =
+        returnType.child(1)?.child(0)?.sourceString || "void";
+      const body = block.analyze();
+
+      context = oldContext;
+
+      const measure = core.measure(
+        id.sourceString,
+        parameters,
+        returnTypeNode,
+        body
+      );
+      context.add(id.sourceString, measure);
+      return core.measureDeclaration(measure);
     },
+
     Params(_open, params, _close) {
       return params.asIteration().children.map((p) => p.analyze());
     },
+
     Param(id, _colon, type) {
-      checkNotDeclared(id.sourceString, id);
-      const param = core.variable(id.sourceString, type.sourceString, false);
+      mustNotAlreadyBeDeclared(id.sourceString, id);
+      const paramType = type.sourceString;
+      const param = core.variable(id.sourceString, paramType, false);
       context.add(id.sourceString, param);
       return param;
     },
-    PrintStmt(_print, exp, _semi) {
-      const argument = exp.analyze();
-      return core.printStatement(argument);
+
+    Type_optional(type) {
+      return `${type.analyze()}?`;
     },
-    Assignment(id, _eq, exp, _semi) {
-      const source = exp.analyze();
-      const target = id.analyze();
-      checkSameTypes(source, target, id);
-      checkIsMutable(target, id);
-      return core.assignmentStatement(source, target);
+
+    Type_array(_open, type, _close) {
+      return `[${type.analyze()}]`;
     },
+
+    Type_function(_open, paramTypes, _close, _arrow, returnType) {
+      const params = paramTypes.asIteration().children.map((t) => t.analyze());
+      return `(${params.join(",")})->${returnType.analyze()}`;
+    },
+
+    Type_id(id) {
+      const type = id.sourceString;
+      const entity = context.lookup(type);
+      mustBeDeclared(type, id);
+      mustBeType(entity, id);
+      return type;
+    },
+
     IfStmt_long(_if, exp, block1, _else, block2) {
       const test = exp.analyze();
-      checkBoolean(test, exp);
+      mustBeBoolean(test, exp);
+      context = context.newChildContext();
       const consequent = block1.analyze();
+      context = context.parent;
+      context = context.newChildContext();
       const alternate = block2.analyze();
+      context = context.parent;
       return core.ifStatement(test, consequent, alternate);
     },
-    IfStmt_elsif(_if, exp, block, _else, trailingIfStatement) {
+
+    IfStmt_elsif(_if, exp, block, _else, trailingIf) {
       const test = exp.analyze();
-      checkBoolean(test, exp);
+      mustBeBoolean(test, exp);
+      context = context.newChildContext();
       const consequent = block.analyze();
-      const alternate = trailingIfStatement.analyze();
+      context = context.parent;
+      const alternate = trailingIf.analyze();
       return core.ifStatement(test, consequent, alternate);
     },
+
     IfStmt_short(_if, exp, block) {
       const test = exp.analyze();
-      checkBoolean(test, exp);
-      const body = block.analyze();
-      return core.shortIfStatement(test, body);
+      mustBeBoolean(test, exp);
+      context = context.newChildContext();
+      const consequent = block.analyze();
+      context = context.parent;
+      return core.shortIfStatement(test, consequent);
     },
-    WhileStmt(_while, exp, block) {
+
+    RepeatStmt_repeatWhile(_repeatWhile, exp, block) {
       const test = exp.analyze();
-      checkBoolean(test, exp);
-      context = context.newChildContext(context, true);
+      mustBeBoolean(test, exp);
+      context = context.newChildContext({ inLoop: true });
       const body = block.analyze();
       context = context.parent;
-      return core.whileStatement(test, body);
+      return core.repeatWhileStatement(test, body);
     },
-    Block(_open, statements, _close) {
-      return statements.children.map((s) => s.analyze());
+
+    RepeatStmt_times(_repeat, exp, block) {
+      const times = exp.analyze();
+      mustBeNumeric(times, exp);
+      context = context.newChildContext({ inLoop: true });
+      const body = block.analyze();
+      context = context.parent;
+      return core.timesStatement(times, body);
     },
-    Exp_test(left, op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      // TODO: THIS IS GOOD FOR NOW BUT MUST CHANGE WHEN WE
-      // ADD STRINGS, FUNCTIONS, ARRAYS, AND OBJECTS
+
+    RepeatStmt_range(_for, id, _in, start, rangeOp, end, block) {
+      mustNotAlreadyBeDeclared(id.sourceString, id);
+      const startExp = start.analyze();
+      const endExp = end.analyze();
+      mustBeNumeric(startExp, start);
+      mustBeNumeric(endExp, end);
+
+      context = context.newChildContext({ inLoop: true });
+      const counter = core.variable(id.sourceString, "number", true);
+      context.add(id.sourceString, counter);
+
+      const body = block.analyze();
+      context = context.parent;
+
+      return core.rangeStatement(
+        counter,
+        startExp,
+        rangeOp.sourceString,
+        endExp,
+        body
+      );
+    },
+
+    RepeatStmt_collection(_for, id, _in, exp, block) {
+      mustNotAlreadyBeDeclared(id.sourceString, id);
+      const collection = exp.analyze();
+      must(collection.type.startsWith("["), `Expected array type`, exp);
+
+      context = context.newChildContext({ inLoop: true });
+      const element = core.variable(
+        id.sourceString,
+        collection.type.slice(1, -1),
+        true
+      );
+      context.add(id.sourceString, element);
+
+      const body = block.analyze();
+      context = context.parent;
+
+      return core.forEachStatement(element, collection, body);
+    },
+
+    Block(_open, compositions, _close) {
+      return compositions.children.map((c) => c.analyze());
+    },
+
+    Exp_conditional(cond, _qmark, thenExp, _colon, elseExp) {
+      const condition = cond.analyze();
+      mustBeBoolean(condition, cond);
+      const thenBranch = thenExp.analyze();
+      const elseBranch = elseExp.analyze();
+      mustBeSameType(thenBranch, elseBranch, elseExp);
+      return core.conditionalExpression(condition, thenBranch, elseBranch);
+    },
+
+    Exp1_unwrapelse(left, _op, right) {
+      const leftExp = left.analyze();
+      must(leftExp.type.endsWith("?"), `Expected optional type`, left);
+      const rightExp = right.analyze();
+      mustBeSameType({ type: leftExp.type.slice(0, -1) }, rightExp, right);
+      return core.unwrapElseExpression(leftExp, rightExp);
+    },
+
+    Exp2_or(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeBoolean(leftExp, left);
+      mustBeBoolean(rightExp, right);
+      return core.binaryExpression("||", leftExp, rightExp, "boolean");
+    },
+
+    Exp2_and(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeBoolean(leftExp, left);
+      mustBeBoolean(rightExp, right);
+      return core.binaryExpression("&&", leftExp, rightExp, "boolean");
+    },
+
+    Exp3_bitor(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeNumeric(leftExp, left);
+      mustBeNumeric(rightExp, right);
+      return core.binaryExpression("|", leftExp, rightExp, "number");
+    },
+
+    Exp3_bitxor(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeNumeric(leftExp, left);
+      mustBeNumeric(rightExp, right);
+      return core.binaryExpression("^", leftExp, rightExp, "number");
+    },
+
+    Exp3_bitand(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeNumeric(leftExp, left);
+      mustBeNumeric(rightExp, right);
+      return core.binaryExpression("&", leftExp, rightExp, "number");
+    },
+
+    Exp4_compare(left, op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
       if (op.sourceString === "==" || op.sourceString === "!=") {
-        check(x.type === y.type, `Type mismatch`, op);
+        mustBeSameType(leftExp, rightExp, op);
       } else {
-        checkNumberOrString(x, left);
-        checkNumberOrString(y, right);
+        mustBeNumericOrString(leftExp, left);
+        mustBeNumericOrString(rightExp, right);
       }
-      return core.binaryExpression(op.sourceString, x, y, "boolean");
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        "boolean"
+      );
     },
-    Condition_add(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumberOrString(x, left);
-      checkSameTypes(x, y, right);
-      return core.binaryExpression("+", x, y, "number");
+
+    Exp5_shift(left, op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeNumeric(leftExp, left);
+      mustBeNumeric(rightExp, right);
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        "number"
+      );
     },
-    Condition_sub(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumber(x, left);
-      checkNumber(y, right);
-      return core.binaryExpression("-", x, y, "number");
+
+    Exp6_add(left, op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeSameType(leftExp, rightExp, right);
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        leftExp.type
+      );
     },
-    Term_mul(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumberOrString(x, left);
-      checkNumber(y, right);
-      return core.binaryExpression("*", x, y, x.type);
+
+    Exp7_multiply(left, op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeSameType(leftExp, rightExp, right);
+      return core.binaryExpression(
+        op.sourceString,
+        leftExp,
+        rightExp,
+        leftExp.type
+      );
     },
-    Term_div(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumber(x, left);
-      checkNumber(y, right);
-      return core.binaryExpression("/", x, y, "number");
+
+    Exp8_power(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      mustBeNumeric(leftExp, left);
+      mustBeNumeric(rightExp, right);
+      return core.binaryExpression("**", leftExp, rightExp, "number");
     },
-    Term_mod(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumber(x, left);
-      checkNumber(y, right);
-      return core.binaryExpression("%", x, y, "number");
+
+    Exp9_unary(op, operand) {
+      const exp = operand.analyze();
+      switch (op.sourceString) {
+        case "#":
+          mustBeArrayOrString(exp, operand);
+          return core.unaryExpression("#", exp, "number");
+        case "-":
+          mustBeNumeric(exp, operand);
+          return core.unaryExpression("-", exp, "number");
+        case "!":
+          mustBeBoolean(exp, operand);
+          return core.unaryExpression("!", exp, "boolean");
+        case "some":
+          must(!exp.type.endsWith("?"), `Already an optional type`, operand);
+          return core.unaryExpression("some", exp, `${exp.type}?`);
+        case "random":
+          mustBeNumeric(exp, operand);
+          return core.unaryExpression("random", exp, "number");
+      }
     },
-    Primary_parens(_open, exp, _close) {
+
+    Exp9_emptyopt(_no, type) {
+      const typeStr = type.analyze();
+      must(typeStr.endsWith("?"), `Expected optional type`, type);
+      return core.nilLiteral(typeStr);
+    },
+
+    Exp9_call(fun, _open, args, _close) {
+      const func = fun.analyze();
+      must(func.kind === "Measure", `Expected function`, fun);
+      const argExps = args.asIteration().children.map((a) => a.analyze());
+      must(
+        argExps.length === func.parameters.length,
+        `Expected ${func.parameters.length} arguments but got ${argExps.length}`,
+        fun
+      );
+      argExps.forEach((arg, i) => {
+        mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
+      });
+      return core.callExpression(func, argExps, func.returnType);
+    },
+
+    Exp9_subscript(array, _open, index, _close) {
+      const arr = array.analyze();
+      const idx = index.analyze();
+      must(arr.type.startsWith("["), `Expected array type`, array);
+      mustBeNumeric(idx, index);
+      return core.subscriptExpression(arr, idx, arr.type.slice(1, -1));
+    },
+
+    Exp9_member(object, _dot, id) {
+      const obj = object.analyze();
+      must(obj.kind === "Grand", `Expected grand type`, object);
+      const field = obj.fields.find((f) => f.name === id.sourceString);
+      must(field, `No such field: ${id.sourceString}`, id);
+      return core.memberExpression(obj, field, field.type);
+    },
+
+    Exp9_emptyarray(type, _open, _close) {
+      const typeStr = type.analyze();
+      return core.emptyArrayExpression(typeStr);
+    },
+
+    Exp9_arrayexp(_open, elements, _close) {
+      const exps = elements.asIteration().children.map((e) => e.analyze());
+      if (exps.length > 0) {
+        const type = exps[0].type;
+        exps.slice(1).forEach((e) => {
+          mustBeSameType({ type }, e, elements);
+        });
+        return core.arrayExpression(exps, `[${type}]`);
+      }
+      return core.arrayExpression([], "[any]");
+    },
+
+    Exp9_parens(_open, exp, _close) {
       return exp.analyze();
     },
-    Factor_neg(_op, operand) {
-      checkNumber(operand.analyze(), operand);
-      return core.unaryExpression("-", operand.analyze(), "number");
+
+    intlit(_digits) {
+      const node = core.integerLiteral(parseInt(this.sourceString));
+      node.type = "number";
+      return node;
     },
-    Factor_not(_op, operand) {
-      checkBoolean(operand.analyze(), operand);
-      return core.unaryExpression("!", operand.analyze(), "boolean");
+
+    floatlit(_int, _dot, _frac, _e, _sign, _exp) {
+      const node = core.floatLiteral(parseFloat(this.sourceString));
+      node.type = "number";
+      return node;
     },
-    Factor_len(_op, operand) {
-      const e = operand.analyze();
-      checkArrayOrString(e, operand);
-      return core.unaryExpression("#", e, "number");
-    },
-    Factor_exp(left, _op, right) {
-      const x = left.analyze();
-      const y = right.analyze();
-      checkNumber(x, left);
-      checkNumber(y, right);
-      return core.binaryExpression("**", x, y, "number");
-    },
-    Primary_array(open, elements, _close) {
-      const contents = elements.asIteration().children.map((e) => e.analyze());
-      checkAllElementsHaveSameType(contents, open);
-      const elementType = contents.length > 0 ? contents[0].type : "any";
-      return core.arrayExpression(contents, `${elementType}[]`);
-    },
-    Primary_subscript(array, _open, index, _close) {
-      const e = array.analyze();
-      const i = index.analyze();
-      checkNumber(i, index);
-      checkArrayOrString(e, array);
-      return core.subscriptExpression(e, index.analyze(), e.type.slice(0, -2));
-    },
-    Primary_call(id, _open, exps, _close) {
-      const fun = context.lookup(id.sourceString);
-      check(fun, `${id.sourceString} not declared`, id);
-      check(fun.kind === "Function", `${id.sourceString} not a function`, id);
-      const parameters = fun.parameters;
-      const args = exps.asIteration().children.map((a) => a.analyze());
-      checkArgumentCountAndTypes(parameters, args, id);
-      return core.callExpression(fun, args, fun.returnType);
-    },
-    numeral(digits, _dot, _fractional, _e, _sign, _exponent) {
-      return Number(this.sourceString);
-    },
-    id(_first, _rest) {
-      const entity = context.lookup(this.sourceString);
-      check(entity, `${this.sourceString} not declared`, this);
-      return entity;
-    },
-    true(_) {
-      return true;
-    },
-    false(_) {
-      return false;
-    },
-    nil(_) {
-      return core.nilLiteral();
-    },
+
     stringlit(_open, chars, _close) {
-      return chars.sourceString;
+      const node = core.stringLiteral(chars.sourceString);
+      node.type = "string";
+      return node;
+    },
+
+    on(_) {
+      const node = core.booleanLiteral(true);
+      node.type = "boolean";
+      return node;
+    },
+
+    off(_) {
+      const node = core.booleanLiteral(false);
+      node.type = "boolean";
+      return node;
+    },
+
+    id(_first, _rest) {
+      const name = this.sourceString;
+      const entity = context.lookup(name);
+      mustBeDeclared(name, this);
+      return entity;
     },
   });
 
   return analyzer(match).analyze();
 }
-
-Number.prototype.type = "number";
-Boolean.prototype.type = "boolean";
-String.prototype.type = "string";
