@@ -31,7 +31,16 @@ export default function analyze(match) {
     }
   }
 
-  let context = new Context({});
+
+  let context = new Context({
+    locals: new Map([
+      [
+        "print",
+        core.measure("print", [core.Param("value", "any")], "void", []),
+      ],
+      ["play", core.measure("play", [core.Param("value", "any")], "void", [])],
+    ]),
+  });
 
   function must(condition, message, at) {
     if (!condition) {
@@ -153,13 +162,17 @@ export default function analyze(match) {
       return core.playStatement(value);
     },
 
-    NoteDecl(_qualifier, id, _eq, exp, _semi) {
+    NoteDecl(_qualifier, id, _colon, type, _eq, exp, _semi) {
       mustNotAlreadyBeDeclared(id.sourceString, id);
       const initializer = exp.analyze();
+      const declaredType = type.child(1)?.analyze();
+      if (declaredType) {
+        mustBeAssignable(initializer, declaredType, exp);
+      }
       const mutable = _qualifier.sourceString === "let";
       const variable = core.variable(
         id.sourceString,
-        initializer.type,
+        declaredType || initializer.type,
         mutable
       );
       context.add(id.sourceString, variable);
@@ -476,17 +489,26 @@ export default function analyze(match) {
 
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();
-      must(func.kind === "Measure", `Expected function`, fun);
-      const argExps = args.asIteration().children.map((a) => a.analyze());
+
       must(
-        argExps.length === func.parameters.length,
-        `Expected ${func.parameters.length} arguments but got ${argExps.length}`,
+        func.kind === "Measure" ||
+          (func.kind === "id" && func.name === "print"),
+        `Expected function`,
         fun
       );
-      argExps.forEach((arg, i) => {
-        mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
-      });
-      return core.callExpression(func, argExps, func.returnType);
+      const argExps = args.asIteration().children.map((a) => a.analyze());
+
+      if (func.kind === "Measure") {
+        must(
+          argExps.length === func.parameters.length,
+          `Expected ${func.parameters.length} arguments(s) but got ${argExps.length} passed`,
+          fun
+        );
+        argExps.forEach((arg, i) => {
+          mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
+        });
+      }
+      return core.callExpression(func, argExps, func.returnType || "void");
     },
 
     Exp9_subscript(array, _open, index, _close) {
@@ -524,6 +546,10 @@ export default function analyze(match) {
 
     Exp9_parens(_open, exp, _close) {
       return exp.analyze();
+    },
+
+    Exp9_nil(_nil) {
+      return core.nilLiteral("any");
     },
 
     intlit(_digits) {

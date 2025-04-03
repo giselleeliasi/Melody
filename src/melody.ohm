@@ -14,7 +14,7 @@ Melody {
               | IfStmt
               | RepeatStmt
 
-  NoteDecl    = (let | const) id "=" Exp ";"
+  NoteDecl    = (let | const) id (":" Type)? "=" Exp ";"
   GrandDecl   = grand id "{" Field* "}"
   Field       = id ":" Type
   MeasureDecl = measure id Params (":" Type)? Block
@@ -62,6 +62,7 @@ Melody {
               | floatlit ~mut
               | intlit ~mut
               | no Type ~mut                                  --emptyopt
+              | nil ~mut                                      --nil
               | Exp9 ("(" | "?(") ListOf<Exp, ","> ")" ~mut   --call
               | Exp9 ("[" | "?[") Exp "]"                     --subscript
               | Exp9 ("." | "?.") id                          --member
@@ -96,6 +97,7 @@ Melody {
   return      = "return" ~alnum
   some        = "some" ~alnum
   no          = "no" ~alnum
+  nil         = "nil" ~alnum
   on          = "on" ~alnum
   off         = "off" ~alnum
   play        = "play" ~alnum

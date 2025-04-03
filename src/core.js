@@ -22,8 +22,18 @@ export function measureDeclaration(measure) {
   return { kind: "measureDeclaration", measure };
 }
 
+// export function measure(name, params, returnType, body) {
+//   return { kind: "measure", name, params, returnType, body };
+// }
+
 export function measure(name, params, returnType, body) {
-  return { kind: "measure", name, params, returnType, body };
+  return {
+    kind: "Measure",
+    name,
+    parameters: params,
+    returnType,
+    body,
+  };
 }
 
 export function Param(name, type) {
@@ -61,6 +71,15 @@ export const breakStatement = { kind: "Break" };
 
 export function returnStatement(expression) {
   return { kind: "Return", expression };
+}
+
+export function callExpression(callee, args, returnType) {
+  return {
+    kind: "CallExpression",
+    callee,
+    args,
+    type: returnType,
+  };
 }
 
 export const ShortReturn = { kind: "ShortReturn" };
