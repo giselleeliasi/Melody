@@ -6,6 +6,7 @@ Melody {
               | MeasureDecl
               | Exp9 ("++" | "--") ";"                        --bump
               | Exp9 "=" Exp ";"                              --assign
+              | play Exp ";"                                  --play
               | Exp9_call ";"                                 --call
               | break ";"                                     --break
               | return Exp ";"                                --return
@@ -97,8 +98,9 @@ Melody {
   no          = "no" ~alnum
   on          = "on" ~alnum
   off         = "off" ~alnum
+  play        = "play" ~alnum
   keyword     = let | const | grand | measure | if | else | repeatWhile | repeat
-              | for | in | break | return | some | no | random | on | off
+              | for | in | break | return | some | no | random | on | off | play
   id          = ~keyword letter alnum*
 
   relop      = "<=" | "<" | "==" | "!=" | ">=" | ">"

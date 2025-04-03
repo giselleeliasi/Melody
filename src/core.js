@@ -1,9 +1,13 @@
-export function Program(compositions) {
+export function program(compositions) {
   return { kind: "Program", compositions };
 }
 
-export function NoteDecl(isConst, name, initializer) {
-  return { kind: "NoteDecl", isConst, name, initializer };
+export function noteDeclaration(variable, initializer) {
+  return { kind: "NoteDecl", variable, initializer };
+}
+
+export function variable(name, type, mutable) {
+  return { kind: "Variable", name, type, mutable };
 }
 
 export function GrandDecl(name, fields) {
@@ -14,8 +18,12 @@ export function Field(name, type) {
   return { kind: "Field", name, type };
 }
 
-export function MeasureDecl(name, params, returnType, body) {
-  return { kind: "MeasureDecl", name, params, returnType, body };
+export function measureDeclaration(measure) {
+  return { kind: "measureDeclaration", measure };
+}
+
+export function measure(name, params, returnType, body) {
+  return { kind: "measure", name, params, returnType, body };
 }
 
 export function Param(name, type) {
@@ -41,27 +49,27 @@ export function functionType(paramTypes, returnType) {
   return { kind: "FunctionType", paramTypes, returnType };
 }
 
-export function bump(variable, op) {
+export function bumpStatement(variable, op) {
   return { kind: "Bump", variable, op };
 }
 
-export function assign(target, source) {
+export function assignmentStatement(target, source) {
   return { kind: "Assign", target, source };
 }
 
-export const Break = { kind: "Break" };
+export const breakStatement = { kind: "Break" };
 
-export function Return(expression) {
+export function returnStatement(expression) {
   return { kind: "Return", expression };
 }
 
 export const ShortReturn = { kind: "ShortReturn" };
 
-export function IfStmt(test, consequent, alternate) {
+export function ifStatement(test, consequent, alternate) {
   return { kind: "IfStmt", test, consequent, alternate };
 }
 
-export function ShortIfStmt(test, consequent) {
+export function shortIfStmt(test, consequent) {
   return { kind: "ShortIfStmt", test, consequent };
 }
 
@@ -69,11 +77,11 @@ export function ElsifStmt(test, consequent, alternate) {
   return { kind: "ElsifStmt", test, consequent, alternate };
 }
 
-export function RepeatWhileStmt(test, body) {
+export function repeatWhileStatement(test, body) {
   return { kind: "RepeatWhileStmt", test, body };
 }
 
-export function RepeatStmt(count, body) {
+export function repeatStatement(count, body) {
   return { kind: "RepeatStmt", count, body };
 }
 
@@ -101,7 +109,7 @@ export function no(baseType) {
   return { kind: "no", baseType, type: optionalType(baseType) };
 }
 
-export function Subscript(array, index, optional) {
+export function subscriptExpression(array, index, optional) {
   return {
     kind: "Subscript",
     array,
@@ -111,7 +119,7 @@ export function Subscript(array, index, optional) {
   };
 }
 
-export function ArrayExp(elements) {
+export function arrayExpression(elements) {
   return { kind: "ArrayExp", elements, type: arrayType(elements[0].type) };
 }
 
@@ -150,6 +158,10 @@ export function on() {
 
 export function off() {
   return { kind: "off", type: booleanType };
+}
+
+export function playStatement(expression) {
+  return { kind: "playStatement", expression };
 }
 
 export function id(name, type) {

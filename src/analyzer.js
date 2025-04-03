@@ -4,11 +4,13 @@ export default function analyze(match) {
   const grammar = match.matcher.grammar;
 
   class Context {
-    constructor(parent = null, inLoop = false, inFunction = false) {
-      this.parent = parent;
-      this.locals = new Map();
-      this.inLoop = inLoop;
-      this.inFunction = inFunction;
+    constructor({
+      parent = null,
+      locals = new Map(),
+      inLoop = false,
+      function: f = null,
+    }) {
+      Object.assign(this, { parent, locals, inLoop, function: f });
     }
 
     add(name, entity) {
@@ -19,12 +21,17 @@ export default function analyze(match) {
       return this.locals.get(name) ?? this.parent?.lookup(name);
     }
 
-    newChildContext({ inLoop = false, inFunction = false } = {}) {
-      return new Context(this, inLoop, inFunction);
+    newChildContext(props) {
+      return new Context({
+        ...this,
+        ...props,
+        parent: this,
+        locals: new Map(),
+      });
     }
   }
 
-  let context = new Context();
+  let context = new Context({});
 
   function must(condition, message, at) {
     if (!condition) {
@@ -81,10 +88,11 @@ export default function analyze(match) {
   function mustBeAssignable(from, toType, at) {
     const fromType = from.type;
     must(
-      (from.kind === "NilLiteral" && toType.endsWith("?")) ||
-        fromType === toType ||
-        toType === `${fromType}?`,
-      `Cannot assign ${fromType} to ${toType}`,
+      typeof (fromType === "string" && fromType === toType) ||
+        (from.type?.kind === "ArrayType" &&
+          toType?.kind === "ArrayType" &&
+          fromType.baseType ===
+            toType.baseType`Cannot assign ${fromType} to ${toType}`),
       at
     );
   }
@@ -92,7 +100,7 @@ export default function analyze(match) {
   function isMutable(variable) {
     return (
       variable.mutable ||
-      (variable.kind === "SubscriptExpression" && isMutable(variable.array))
+      (variable.kind === "Subscript" && isMutable(variable.array))
     );
   }
 
@@ -126,18 +134,23 @@ export default function analyze(match) {
 
     Composition_break(_break, _semi) {
       must(context.inLoop, `Break can only appear in a loop`, _break);
-      return core.breakStatement();
+      return core.breakStatement;
     },
 
     Composition_return(_return, exp, _semi) {
-      must(context.inFunction, `Return can only appear in a function`, _return);
+      // must(context.inFunction, `Return can only appear in a function`, _return);
       const value = exp.analyze();
       return core.returnStatement(value);
     },
 
     Composition_shortreturn(_return, _semi) {
-      must(context.inFunction, `Return can only appear in a function`, _return);
+      // must(context.inFunction, `Return can only appear in a function`, _return);
       return core.shortReturnStatement();
+    },
+
+    Composition_play(_play, exp, _semi) {
+      const value = exp.analyze();
+      return core.playStatement(value);
     },
 
     NoteDecl(_qualifier, id, _eq, exp, _semi) {
@@ -165,7 +178,7 @@ export default function analyze(match) {
       return core.field(id.sourceString, type.sourceString);
     },
 
-    MeasureDecl(_measure, id, params, returnType, block) {
+    MeasureDecl(_measure, id, params, _colon, returnType, block) {
       mustNotAlreadyBeDeclared(id.sourceString, id);
       const oldContext = context;
       context = context.newChildContext({ inFunction: true });
@@ -199,7 +212,7 @@ export default function analyze(match) {
       return param;
     },
 
-    Type_optional(type) {
+    Type_optional(type, _questionMark) {
       return `${type.analyze()}?`;
     },
 
@@ -248,7 +261,7 @@ export default function analyze(match) {
       context = context.newChildContext();
       const consequent = block.analyze();
       context = context.parent;
-      return core.shortIfStatement(test, consequent);
+      return core.shortIfStmt(test, consequent);
     },
 
     RepeatStmt_repeatWhile(_repeatWhile, exp, block) {
@@ -434,7 +447,7 @@ export default function analyze(match) {
       return core.binaryExpression("**", leftExp, rightExp, "number");
     },
 
-    Exp9_unary(op, operand) {
+    Exp8_unary(op, operand) {
       const exp = operand.analyze();
       switch (op.sourceString) {
         case "#":
@@ -479,9 +492,9 @@ export default function analyze(match) {
     Exp9_subscript(array, _open, index, _close) {
       const arr = array.analyze();
       const idx = index.analyze();
-      must(arr.type.startsWith("["), `Expected array type`, array);
+      must(arr.type.kind === "ArrayType", `Expected array type`, array);
       mustBeNumeric(idx, index);
-      return core.subscriptExpression(arr, idx, arr.type.slice(1, -1));
+      return core.subscriptExpression(arr, idx, arr.type.baseType);
     },
 
     Exp9_member(object, _dot, id) {
@@ -514,31 +527,31 @@ export default function analyze(match) {
     },
 
     intlit(_digits) {
-      const node = core.integerLiteral(parseInt(this.sourceString));
+      const node = core.intlit(parseInt(this.sourceString));
       node.type = "number";
       return node;
     },
 
     floatlit(_int, _dot, _frac, _e, _sign, _exp) {
-      const node = core.floatLiteral(parseFloat(this.sourceString));
+      const node = core.floatlit(parseFloat(this.sourceString));
       node.type = "number";
       return node;
     },
 
     stringlit(_open, chars, _close) {
-      const node = core.stringLiteral(chars.sourceString);
+      const node = core.stringlit(chars.sourceString);
       node.type = "string";
       return node;
     },
 
     on(_) {
-      const node = core.booleanLiteral(true);
+      const node = core.on();
       node.type = "boolean";
       return node;
     },
 
     off(_) {
-      const node = core.booleanLiteral(false);
+      const node = core.off();
       node.type = "boolean";
       return node;
     },
