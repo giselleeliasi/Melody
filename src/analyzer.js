@@ -31,7 +31,6 @@ export default function analyze(match) {
     }
   }
 
-
   let context = new Context({
     locals: new Map([
       [
@@ -487,9 +486,32 @@ export default function analyze(match) {
       return core.nilLiteral(typeStr);
     },
 
+    // Exp9_call(fun, _open, args, _close) {
+    //   const func = fun.analyze();
+
+    //   must(
+    //     func.kind === "Measure" ||
+    //       (func.kind === "id" && func.name === "print"),
+    //     `Expected function`,
+    //     fun
+    //   );
+    //   const argExps = args.asIteration().children.map((a) => a.analyze());
+
+    //   if (func.kind === "Measure") {
+    //     must(
+    //       argExps.length === func.parameters.length,
+    //       `Expected ${func.parameters.length} arguments(s) but got ${argExps.length} passed`,
+    //       fun
+    //     );
+    //     argExps.forEach((arg, i) => {
+    //       mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
+    //     });
+    //   }
+    //   return core.callExpression(func, argExps, func.returnType || "void");
+    // },
+
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();
-
       must(
         func.kind === "Measure" ||
           (func.kind === "id" && func.name === "print"),
@@ -501,7 +523,7 @@ export default function analyze(match) {
       if (func.kind === "Measure") {
         must(
           argExps.length === func.parameters.length,
-          `Expected ${func.parameters.length} arguments(s) but got ${argExps.length} passed`,
+          `Expected ${func.parameters.length} argument(s) but got ${argExps.length} passed`,
           fun
         );
         argExps.forEach((arg, i) => {

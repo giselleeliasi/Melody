@@ -22,9 +22,9 @@ export function measureDeclaration(measure) {
   return { kind: "measureDeclaration", measure };
 }
 
-// export function measure(name, params, returnType, body) {
-//   return { kind: "measure", name, params, returnType, body };
-// }
+export function callStatement(call) {
+  return { kind: "CallStatement", call };
+}
 
 export function measure(name, params, returnType, body) {
   return {
@@ -116,8 +116,14 @@ export function Conditional(test, consequent, alternate, type) {
   return { kind: "Conditional", test, consequent, alternate, type };
 }
 
-export function Binary(op, left, right, type) {
-  return { kind: "Binary", op, left, right, type };
+export function binaryExpression(op, left, right, type) {
+  return {
+    kind: "BinaryExp",
+    op,
+    left,
+    right,
+    type,
+  };
 }
 
 export function Unary(op, operand, type) {
@@ -185,6 +191,14 @@ export function playStatement(expression) {
 
 export function id(name, type) {
   return { kind: "id", name, type };
+}
+
+export function nilLiteral(type = "any") {
+  return { kind: "NilLiteral", type };
+}
+
+export function unaryExpression(op, operand, type) {
+  return { kind: "UnaryExp", op, operand, type };
 }
 
 // Standard library for Melody
