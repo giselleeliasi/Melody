@@ -22,6 +22,38 @@ const semanticChecks = [
   ["array length", "print(# [1, 2, 3]);"],
   ["variables", "let x = [[[[1]]]]; print(x[0][0][0][0] + 2);"],
   ["subscript exp", "let a = [1, 2]; print(a[0]);"],
+  ["optional unwrapping", "let x: number? = 5; let y = x ?? 10;"],
+  ["function type", "let f: (number, boolean) -> string = nil;"],
+  ["some operator", "let x = 5; let y = some x;"],
+  ["random operator", "let x = random 100;"],
+  ["bitwise operators", "let x = 1 & 2 | 3 ^ 4;"],
+  ["shift operators", "let x = 1 << 2; let y = 8 >> 1;"],
+  ["nested conditionals", "let x = 1 < 2 ? 3 + 4 : 5 * 6;"],
+  [
+    "member access",
+    "grand Point { x: number, y: number } let p = Point(1, 2); let x = p.x;",
+  ],
+  ["constructor", "grand Point { x: number, y: number } let p = Point(1, 2);"],
+  ["complex array", "let a = [[1, 2], [3, 4]]; a[0][1] = 10;"],
+  [
+    "measure with return",
+    "measure add(x: number, y: number): number { return x + y; }",
+  ],
+  ["for collection loop", "let a = [1, 2, 3]; for x in a { print(x); }"],
+  ["for range loop", "for i in 1...5 { print(i); }"],
+  ["for range loop exclusive", "for i in 1..<5 { print(i); }"],
+  ["repeat times", 'repeat 5 { print("hi"); }'],
+
+  // For error cases
+  [
+    "invalid function type",
+    "let f: (number -> string = nil;",
+    /Invalid function type/,
+  ],
+  ["invalid optional use", "let x = 5; let y = x??;", /Expected expression/],
+  ["invalid random use", "let x = random;", /Expected expression/],
+  ["invalid some use", "let x = some;", /Expected expression/],
+  ["invalid member access", "let x = 5; let y = x.z;", /No such field/],
   ["simple calls", "print(1);"],
   [
     "type equivalence of nested arrays",
@@ -32,7 +64,6 @@ const semanticChecks = [
   ["vardec with optional type", "let x: number? = 55;"],
 ];
 
-// Programs that are syntactically correct but have semantic errors
 const semanticErrors = [
   ["non-number increment", "let x = off; ++x;", /Expected number/],
   ["undeclared id", "print(x);", /x not declared/],

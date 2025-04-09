@@ -146,13 +146,11 @@ export default function analyze(match) {
     },
 
     Composition_return(_return, exp, _semi) {
-      // must(context.inFunction, `Return can only appear in a function`, _return);
       const value = exp.analyze();
       return core.returnStatement(value);
     },
 
     Composition_shortreturn(_return, _semi) {
-      // must(context.inFunction, `Return can only appear in a function`, _return);
       return core.shortReturnStatement();
     },
 
@@ -401,6 +399,18 @@ export default function analyze(match) {
       const leftExp = left.analyze();
       const rightExp = right.analyze();
       if (op.sourceString === "==" || op.sourceString === "!=") {
+        // Special case for array/object comparison
+        if (
+          leftExp.type.kind === "ArrayType" &&
+          rightExp.type.kind === "ArrayType"
+        ) {
+          return core.binaryExpression(
+            op.sourceString,
+            leftExp,
+            rightExp,
+            "boolean"
+          );
+        }
         mustBeSameType(leftExp, rightExp, op);
       } else {
         mustBeNumericOrString(leftExp, left);
@@ -485,30 +495,6 @@ export default function analyze(match) {
       must(typeStr.endsWith("?"), `Expected optional type`, type);
       return core.nilLiteral(typeStr);
     },
-
-    // Exp9_call(fun, _open, args, _close) {
-    //   const func = fun.analyze();
-
-    //   must(
-    //     func.kind === "Measure" ||
-    //       (func.kind === "id" && func.name === "print"),
-    //     `Expected function`,
-    //     fun
-    //   );
-    //   const argExps = args.asIteration().children.map((a) => a.analyze());
-
-    //   if (func.kind === "Measure") {
-    //     must(
-    //       argExps.length === func.parameters.length,
-    //       `Expected ${func.parameters.length} arguments(s) but got ${argExps.length} passed`,
-    //       fun
-    //     );
-    //     argExps.forEach((arg, i) => {
-    //       mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
-    //     });
-    //   }
-    //   return core.callExpression(func, argExps, func.returnType || "void");
-    // },
 
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();
