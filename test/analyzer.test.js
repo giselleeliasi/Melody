@@ -44,6 +44,26 @@ const semanticChecks = [
   ["for range loop exclusive", "for i in 1..<5 { print(i); }"],
   ["repeat times", 'repeat 5 { print("hi"); }'],
 
+  ["empty array declaration", "let a: [number] = [];"],
+  ["grand with multiple fields", "grand Person { name: string, age: number }"],
+  ["short return statement", "measure f() { return; }"],
+  ["nil value for optionals", "let x: string? = nil;"],
+  ["empty optional creation", "let x = no number;"],
+  ["bitwise operators", "print(5 & 3); print(5 | 3); print(5 ^ 3);"],
+  ["shift operators", "print(5 << 2); print(10 >> 1);"],
+  ["nested conditional expressions", "print(on ? 1 : off ? 2 : 3);"],
+  [
+    "member access",
+    "grand Point { x: number, y: number } let p = Point(1, 2); print(p.x);",
+  ],
+  ["times loop", "repeat 5 { print(1); }"],
+  ["for each loop", "for i in [1, 2, 3] { print(i); }"],
+  [
+    "optional member access",
+    "grand Point { x: number, y: number } let p: Point? = Point(1, 2); let x = p?.x;",
+  ],
+  ["optional subscript", "let a: [number]? = [1, 2, 3]; let x = a?[0];"],
+
   // For error cases
   [
     "invalid function type",

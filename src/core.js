@@ -10,13 +10,13 @@ export function variable(name, type, mutable) {
   return { kind: "Variable", name, type, mutable };
 }
 
-export function GrandDecl(name, fields) {
-  return { kind: "GrandDecl", name, fields };
-}
+// export function GrandDecl(name, fields) {
+//   return { kind: "GrandDecl", name, fields };
+// }
 
-export function Field(name, type) {
-  return { kind: "Field", name, type };
-}
+// export function Field(name, type) {
+//   return { kind: "Field", name, type };
+// }
 
 export function measureDeclaration(measure) {
   return { kind: "measureDeclaration", measure };
@@ -84,16 +84,28 @@ export function callExpression(callee, args, returnType) {
 
 export const ShortReturn = { kind: "ShortReturn" };
 
+// export function ifStatement(test, consequent, alternate) {
+//   return { kind: "IfStmt", test, consequent, alternate };
+// }
+
+// export function shortIfStmt(test, consequent) {
+//   return { kind: "ShortIfStmt", test, consequent };
+// }
+
+// export function ElsifStmt(test, consequent, alternate) {
+//   return { kind: "ElsifStmt", test, consequent, alternate };
+// }
+
 export function ifStatement(test, consequent, alternate) {
-  return { kind: "IfStmt", test, consequent, alternate };
+  return { kind: "IfStatement", test, consequent, alternate };
 }
 
 export function shortIfStmt(test, consequent) {
-  return { kind: "ShortIfStmt", test, consequent };
+  return { kind: "ShortIfStatement", test, consequent };
 }
 
-export function ElsifStmt(test, consequent, alternate) {
-  return { kind: "ElsifStmt", test, consequent, alternate };
+export function elsifStatement(test, consequent, alternate) {
+  return { kind: "ElsifStatement", test, consequent, alternate };
 }
 
 export function repeatWhileStatement(test, body) {
@@ -112,9 +124,9 @@ export function ForStmt(iterator, collection, body) {
   return { kind: "ForStmt", iterator, collection, body };
 }
 
-export function Conditional(test, consequent, alternate, type) {
-  return { kind: "Conditional", test, consequent, alternate, type };
-}
+// export function Conditional(test, consequent, alternate, type) {
+//   return { kind: "Conditional", test, consequent, alternate, type };
+// }
 
 export function binaryExpression(op, left, right, type) {
   return {
@@ -148,12 +160,44 @@ export function arrayExpression(elements) {
   return { kind: "ArrayExp", elements, type: arrayType(elements[0].type) };
 }
 
-export function EmptyArray(type) {
-  return { kind: "EmptyArray", type };
+// export function EmptyArray(type) {
+//   return { kind: "EmptyArray", type };
+// }
+
+// export function Member(object, op, field, optional) {
+//   return { kind: "Member", object, op, field, optional, type: field.type };
+// }
+
+export function grandDeclaration(grandType) {
+  return { kind: "GrandDecl", grandType };
 }
 
-export function Member(object, op, field, optional) {
-  return { kind: "Member", object, op, field, optional, type: field.type };
+export function field(name, type) {
+  return { kind: "Field", name, type };
+}
+
+// export function shortReturnStatement() {
+//   return { kind: "ShortReturn" };
+// }
+
+export function conditionalExpression(test, consequent, alternate) {
+  return { kind: "Conditional", test, consequent, alternate };
+}
+
+export function timesStatement(times, body) {
+  return { kind: "TimesStmt", times, body };
+}
+
+export function forEachStatement(iterator, collection, body) {
+  return { kind: "ForEachStmt", iterator, collection, body };
+}
+
+export function memberExpression(object, field, type) {
+  return { kind: "Member", object, field, type };
+}
+
+export function emptyArrayExpression(type) {
+  return { kind: "EmptyArray", type };
 }
 
 export function Call(callee, args, optional) {
