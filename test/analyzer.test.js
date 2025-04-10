@@ -62,6 +62,29 @@ const semanticChecks = [
   ["outer variable", "let x = 1; repeatWhile off { print(x); }"],
   ["vardec with nil", "let x: number? = nil;"],
   ["vardec with optional type", "let x: number? = 55;"],
+  ["short return statement", "measure f() { return; }"],
+  ["grand declaration", "grand Point { x: number, y: number }"],
+  ["empty array with type", "let a: [number] = [];"],
+  [
+    "member expression",
+    "grand Person { name: string } let p = Person('Alice'); print(p.name);",
+  ],
+  ["conditional expression", "let x = true ? 5 : 10;"],
+  ["unwrap else with optional", "let x: number? = 5; let y = x ?? 10;"],
+  ["complex nested conditionals", "let x = (1 < 2) ? (3 > 4 ? 5 : 6) : 7;"],
+  ["multiple binary expressions", "let x = 1 + 2 * 3 / 4 - 5;"],
+  [
+    "all comparison operators",
+    "print(1 < 2); print(3 <= 4); print(5 > 6); print(7 >= 8); print(9 == 10); print(11 != 12);",
+  ],
+  ["nested subscript", "let a = [[1,2],[3,4]]; print(a[0][1]);"],
+  ["array of optionals", "let a: [number?] = [1, nil];"],
+  [
+    "function with multiple params",
+    "measure add(a: number, b: number, c: number): number { return a + b + c; }",
+  ],
+  ["empty grand", "grand Empty { }"],
+  ["play with expression", "play 440 + 110;"],
 ];
 
 const semanticErrors = [
@@ -79,6 +102,108 @@ const semanticErrors = [
     "measure f() { return 3; } measure g() { return 5; } f = g;",
     /Assignment to immutable variable/,
   ],
+
+  ["empty array with type", "let a: [number] = [];"],
+
+  [
+    "grand with fields",
+    `
+  grand Person { 
+    name: string,
+    age: number
+  }
+  let p = Person("Alice", 30);
+  print(p.name);
+`,
+  ],
+
+  ["short return", "measure f() { return; }"],
+
+  ["nil literal", "let x: string? = nil;"],
+
+  ["empty optional", "let x = no number;"],
+
+  ["bitwise and", "print(5 & 3);"],
+  ["bitwise or", "print(5 | 3);"],
+  ["bitwise xor", "print(5 ^ 3);"],
+  ["left shift", "print(5 << 2);"],
+  ["right shift", "print(10 >> 1);"],
+
+  [
+    "nested if-else",
+    `
+  if on {
+    if off {
+      print(1);
+    } else {
+      print(2);
+    }
+  } else {
+    print(3);
+  }
+`,
+  ],
+
+  [
+    "for-in with complex expression",
+    `
+  for i in [1, 2, 3][0] + 1 ... 5 {
+    print(i);
+  }
+`,
+  ],
+
+  ["nested conditional", "print((on ? 1 : 2) + (off ? 3 : 4));"],
+
+  [
+    "function returning function",
+    `
+  measure makeAdder(x: number): (number) -> number {
+    measure adder(y: number): number {
+      return x + y;
+    }
+    return adder;
+  }
+  let add5 = makeAdder(5);
+  print(add5(10));
+`,
+  ],
+
+  ["play statement", "play 440;"],
+
+  [
+    "optional member access",
+    `
+  grand Point { x: number, y: number }
+  let p: Point? = Point(1, 2);
+  let x = p?.x;
+`,
+  ],
+
+  [
+    "optional subscript",
+    `
+  let a: [number]? = [1, 2, 3];
+  let x = a?[0];
+`,
+  ],
+
+  [
+    "expressions in various contexts",
+    `
+  let a = 1 + 2 * 3;
+  let b = (a ** 2) / 4;
+  let c = -b;
+  let d = #[1, 2, 3];
+  let e = random 10;
+  let f = !off;
+  let g = 1 < 2 ? 3 : 4;
+  let h = a & b | c ^ d;
+  let i = a << 1;
+  let j = b >> 1;
+`,
+  ],
+
   [
     "assign to const array element",
     "const a = [1]; a[0] = 2;",

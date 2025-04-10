@@ -201,6 +201,17 @@ export function unaryExpression(op, operand, type) {
   return { kind: "UnaryExp", op, operand, type };
 }
 
+export function rangeStatement(variable, start, op, end, body) {
+  return {
+    kind: "RangeStmt",
+    variable,
+    start,
+    rangeOp: op,
+    end,
+    body,
+  };
+}
+
 // Standard library for Melody
 export const standardLibrary = Object.freeze({
   int: intType,
