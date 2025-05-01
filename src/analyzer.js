@@ -93,17 +93,17 @@ export default function analyze(match) {
     must(a.type === b.type, `Type mismatch: ${a.type} vs ${b.type}`, at);
   }
 
-  function mustBeAssignable(from, toType, at) {
-    const fromType = from.type;
-    must(
-      typeof (fromType === "string" && fromType === toType) ||
-        (from.type?.kind === "ArrayType" &&
-          toType?.kind === "ArrayType" &&
-          fromType.baseType ===
-            toType.baseType`Cannot assign ${fromType} to ${toType}`),
-      at
-    );
-  }
+function mustBeAssignable(from, toType, at) {
+  const fromType = from.type;
+  must(
+    (typeof fromType === "string" && fromType === toType) ||
+      (from.type?.kind === "ArrayType" &&
+        toType?.kind === "ArrayType" &&
+        fromType.baseType === toType.baseType),
+    `Cannot assign ${fromType} to ${toType}`,
+    at
+  );
+}
 
   function isMutable(variable) {
     return (
