@@ -256,6 +256,10 @@ export function rangeStatement(variable, start, op, end, body) {
   };
 }
 
+export function shortReturnStatement() {
+  return { kind: "ShortReturn" };
+}
+
 // Standard library for Melody
 export const standardLibrary = Object.freeze({
   int: intType,

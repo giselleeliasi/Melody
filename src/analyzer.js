@@ -235,8 +235,19 @@ export default function analyze(match) {
       return `(${params.join(",")})->${returnType.analyze()}`;
     },
 
+    // Type_id(id) {
+    //   const type = id.sourceString;
+    //   const entity = context.lookup(type);
+    //   mustBeDeclared(type, id);
+    //   mustBeType(entity, id);
+    //   return type;
+    // },
+
     Type_id(id) {
       const type = id.sourceString;
+      if (["number", "boolean", "string", "void", "any"].includes(type)) {
+        return type;
+      }
       const entity = context.lookup(type);
       mustBeDeclared(type, id);
       mustBeType(entity, id);
@@ -496,11 +507,50 @@ export default function analyze(match) {
       return core.nilLiteral(typeStr);
     },
 
+    // Exp9_call(fun, _open, args, _close) {
+    //   const func = fun.analyze();
+    //   must(
+    //     func.kind === "Measure" ||
+    //       (func.kind === "id" && func.name === "print"),
+    //     `Expected function`,
+    //     fun
+    //   );
+    //   const argExps = args.asIteration().children.map((a) => a.analyze());
+
+    //   if (func.kind === "Measure") {
+    //     must(
+    //       argExps.length === func.parameters.length,
+    //       `Expected ${func.parameters.length} argument(s) but got ${argExps.length} passed`,
+    //       fun
+    //     );
+    //     argExps.forEach((arg, i) => {
+    //       mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
+    //     });
+    //   }
+    //   return core.callExpression(func, argExps, func.returnType || "void");
+    // },
+
+    Exp9_subscript(array, _open, index, _close) {
+      const arr = array.analyze();
+      const idx = index.analyze();
+      must(arr.type.kind === "ArrayType", `Expected array type`, array);
+      mustBeNumeric(idx, index);
+      return core.subscriptExpression(arr, idx, arr.type.baseType);
+    },
+
+    // Exp9_member(object, _dot, id) {
+    //   const obj = object.analyze();
+    //   must(obj.kind === "Grand", `Expected grand type`, object);
+    //   const field = obj.fields.find((f) => f.name === id.sourceString);
+    //   must(field, `No such field: ${id.sourceString}`, id);
+    //   return core.memberExpression(obj, field, field.type);
+    // },
+
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();
       must(
         func.kind === "Measure" ||
-          (func.kind === "id" && func.name === "print"),
+          (func.kind === "Variable" && func.type?.kind === "FunctionType"),
         `Expected function`,
         fun
       );
@@ -509,22 +559,18 @@ export default function analyze(match) {
       if (func.kind === "Measure") {
         must(
           argExps.length === func.parameters.length,
-          `Expected ${func.parameters.length} argument(s) but got ${argExps.length} passed`,
+          `Expected ${func.parameters.length} argument(s) but got ${argExps.length}`,
           fun
         );
         argExps.forEach((arg, i) => {
           mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
         });
       }
-      return core.callExpression(func, argExps, func.returnType || "void");
-    },
-
-    Exp9_subscript(array, _open, index, _close) {
-      const arr = array.analyze();
-      const idx = index.analyze();
-      must(arr.type.kind === "ArrayType", `Expected array type`, array);
-      mustBeNumeric(idx, index);
-      return core.subscriptExpression(arr, idx, arr.type.baseType);
+      return core.callExpression(
+        func,
+        argExps,
+        func.returnType || func.type?.returnType || "void"
+      );
     },
 
     Exp9_member(object, _dot, id) {
