@@ -200,8 +200,15 @@ export function emptyArrayExpression(type) {
   return { kind: "EmptyArray", type };
 }
 
+// export function Call(callee, args, optional) {
+//   return { kind: "Call", callee, args, optional, type: callee.type.returnType };
+// }
+
 export function Call(callee, args, optional) {
-  return { kind: "Call", callee, args, optional, type: callee.type.returnType };
+  const returnType =
+    callee.type?.returnType ??
+    (callee.kind === "Measure" ? callee.returnType : "void");
+  return { kind: "Call", callee, args, optional, type: returnType };
 }
 
 export function ConstructorCall(type, args) {

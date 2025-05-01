@@ -382,28 +382,76 @@ export default function analyze(match) {
       return core.binaryExpression("&&", leftExp, rightExp, "boolean");
     },
 
+    // Exp3_bitor(left, _op, right) {
+    //   const leftExp = left.analyze();
+    //   const rightExp = right.analyze();
+    //   mustBeNumeric(leftExp, left);
+    //   mustBeNumeric(rightExp, right);
+    //   return core.binaryExpression("|", leftExp, rightExp, "number");
+    // },
+
+    // Exp3_bitxor(left, _op, right) {
+    //   const leftExp = left.analyze();
+    //   const rightExp = right.analyze();
+    //   mustBeNumeric(leftExp, left);
+    //   mustBeNumeric(rightExp, right);
+    //   return core.binaryExpression("^", leftExp, rightExp, "number");
+    // },
+
+    // Exp3_bitand(left, _op, right) {
+    //   const leftExp = left.analyze();
+    //   const rightExp = right.analyze();
+    //   mustBeNumeric(leftExp, left);
+    //   mustBeNumeric(rightExp, right);
+    //   return core.binaryExpression("&", leftExp, rightExp, "number");
+    // },
+
     Exp3_bitor(left, _op, right) {
-      const leftExp = left.analyze();
-      const rightExp = right.analyze();
-      mustBeNumeric(leftExp, left);
-      mustBeNumeric(rightExp, right);
-      return core.binaryExpression("|", leftExp, rightExp, "number");
+      left = left.analyze(this.context);
+      right = right.analyze(this.context);
+      must(
+        left.type === "int" || left.type === "number",
+        "Expected number",
+        left
+      );
+      must(
+        right.type === "int" || right.type === "number",
+        "Expected number",
+        right
+      );
+      return core.binaryExpression("|", left, right, "int");
     },
 
     Exp3_bitxor(left, _op, right) {
-      const leftExp = left.analyze();
-      const rightExp = right.analyze();
-      mustBeNumeric(leftExp, left);
-      mustBeNumeric(rightExp, right);
-      return core.binaryExpression("^", leftExp, rightExp, "number");
+      left = left.analyze(this.context);
+      right = right.analyze(this.context);
+      must(
+        left.type === "int" || left.type === "number",
+        "Expected number",
+        left
+      );
+      must(
+        right.type === "int" || right.type === "number",
+        "Expected number",
+        right
+      );
+      return core.binaryExpression("^", left, right, "int");
     },
 
     Exp3_bitand(left, _op, right) {
-      const leftExp = left.analyze();
-      const rightExp = right.analyze();
-      mustBeNumeric(leftExp, left);
-      mustBeNumeric(rightExp, right);
-      return core.binaryExpression("&", leftExp, rightExp, "number");
+      left = left.analyze(this.context);
+      right = right.analyze(this.context);
+      must(
+        left.type === "int" || left.type === "number",
+        "Expected number",
+        left
+      );
+      must(
+        right.type === "int" || right.type === "number",
+        "Expected number",
+        right
+      );
+      return core.binaryExpression("&", left, right, "int");
     },
 
     Exp4_compare(left, op, right) {
