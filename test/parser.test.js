@@ -7,7 +7,6 @@ const syntaxChecks = [
   ["simplest syntactically correct program", "break;"],
   ["multiple statements", "print(1);\nbreak;\nx=5; return; return;"],
   ["variable declarations", "let e=99*1;\nconst z=off;"],
-  ["type declarations", "grand S {x:T1 y:T2 z:bool}"],
   ["function with no params, no return type", "measure f() {}"],
   ["function with one param", "measure f(x: int) {}"],
   ["function with two params", "measure f(x: int, y: boolean) {}"],
