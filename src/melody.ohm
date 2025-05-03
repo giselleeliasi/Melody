@@ -15,7 +15,7 @@ Melody {
               | RepeatStmt
 
   NoteDecl    = (let | const) id (":" Type)? "=" Exp ";"
-  GrandDecl = "grand" id "{" ListOf<Field, ","> "}"
+  GrandDecl = "grand" id "{" ListOf<Field, ","> "};"
   Field = id ":" Type
 
   MeasureDecl = measure id Params (":" Type)? Block

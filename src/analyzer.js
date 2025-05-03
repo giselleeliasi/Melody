@@ -93,17 +93,18 @@ export default function analyze(match) {
     must(a.type === b.type, `Type mismatch: ${a.type} vs ${b.type}`, at);
   }
 
-function mustBeAssignable(from, toType, at) {
-  const fromType = from.type;
-  must(
-    (typeof fromType === "string" && fromType === toType) ||
-      (from.type?.kind === "ArrayType" &&
-        toType?.kind === "ArrayType" &&
-        fromType.baseType === toType.baseType),
-    `Cannot assign ${fromType} to ${toType}`,
-    at
-  );
-}
+  function mustBeAssignable(from, toType, at) {
+    const fromType = from.type;
+    must(
+      toType === "any" || // allow assigning anything to "any"
+        (typeof fromType === "string" && fromType === toType) ||
+        (from.type?.kind === "ArrayType" &&
+          toType?.kind === "ArrayType" &&
+          fromType.baseType === toType.baseType),
+      `Cannot assign ${fromType} to ${toType}`,
+      at
+    );
+  }
 
   function isMutable(variable) {
     return (
@@ -131,8 +132,12 @@ function mustBeAssignable(from, toType, at) {
     Composition_assign(target, _eq, exp, _semi) {
       const source = exp.analyze();
       const dest = target.analyze();
-      mustBeAssignable(source, dest.type, target);
+
+      must(dest, `Assignment to undeclared identifier`, target);
+      must(dest.kind !== "Measure", `Assignment to immutable variable`, target);
+
       mustBeMutable(dest, target);
+      mustBeAssignable(source, dest.type, target);
       return core.assignmentStatement(dest, source);
     },
 
@@ -249,7 +254,7 @@ function mustBeAssignable(from, toType, at) {
         return type;
       }
       const entity = context.lookup(type);
-      mustBeDeclared(type, id);
+      must(entity, `Identifier ${type} not declared`, id);
       mustBeType(entity, id);
       return type;
     },
@@ -382,13 +387,21 @@ function mustBeAssignable(from, toType, at) {
       return core.binaryExpression("&&", leftExp, rightExp, "boolean");
     },
 
-    // Exp3_bitor(left, _op, right) {
-    //   const leftExp = left.analyze();
-    //   const rightExp = right.analyze();
-    //   mustBeNumeric(leftExp, left);
-    //   mustBeNumeric(rightExp, right);
-    //   return core.binaryExpression("|", leftExp, rightExp, "number");
-    // },
+    Exp3_bitor(left, _op, right) {
+      const leftExp = left.analyze();
+      const rightExp = right.analyze();
+      must(
+        leftExp.type === "int" || leftExp.type === "number",
+        "Expected number",
+        left
+      );
+      must(
+        rightExp.type === "int" || rightExp.type === "number",
+        "Expected number",
+        right
+      );
+      return core.binaryExpression("|", leftExp, rightExp, "int");
+    },
 
     // Exp3_bitxor(left, _op, right) {
     //   const leftExp = left.analyze();
@@ -406,21 +419,21 @@ function mustBeAssignable(from, toType, at) {
     //   return core.binaryExpression("&", leftExp, rightExp, "number");
     // },
 
-    Exp3_bitor(left, _op, right) {
-      left = left.analyze(this.context);
-      right = right.analyze(this.context);
-      must(
-        left.type === "int" || left.type === "number",
-        "Expected number",
-        left
-      );
-      must(
-        right.type === "int" || right.type === "number",
-        "Expected number",
-        right
-      );
-      return core.binaryExpression("|", left, right, "int");
-    },
+    // Exp3_bitor(left, _op, right) {
+    //   left = left.analyze(this.context);
+    //   right = right.analyze(this.context);
+    //   must(
+    //     left.type === "int" || left.type === "number",
+    //     "Expected number",
+    //     left
+    //   );
+    //   must(
+    //     right.type === "int" || right.type === "number",
+    //     "Expected number",
+    //     right
+    //   );
+    //   return core.binaryExpression("|", left, right, "int");
+    // },
 
     Exp3_bitxor(left, _op, right) {
       left = left.analyze(this.context);
@@ -540,9 +553,16 @@ function mustBeAssignable(from, toType, at) {
         case "!":
           mustBeBoolean(exp, operand);
           return core.unaryExpression("!", exp, "boolean");
-        case "some":
-          must(!exp.type.endsWith("?"), `Already an optional type`, operand);
-          return core.unaryExpression("some", exp, `${exp.type}?`);
+        case "some": {
+          const t = exp.type;
+          const alreadyOptional =
+            (typeof t === "string" && t.endsWith("?")) ||
+            t?.kind === "OptionalType";
+
+          must(!alreadyOptional, `Already an optional type`, operand);
+          return core.unaryExpression("some", exp, `${t}?`);
+        }
+
         case "random":
           mustBeNumeric(exp, operand);
           return core.unaryExpression("random", exp, "number");
@@ -550,8 +570,10 @@ function mustBeAssignable(from, toType, at) {
     },
 
     Exp9_emptyopt(_no, type) {
-      const typeStr = type.analyze();
-      must(typeStr.endsWith("?"), `Expected optional type`, type);
+      let typeStr = type.analyze();
+      if (!typeStr.endsWith("?")) {
+        typeStr += "?";
+      }
       return core.nilLiteral(typeStr);
     },
 
