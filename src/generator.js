@@ -1,3 +1,5 @@
+import { voidType, standardLibrary } from "./core.js";
+
 export default function generate(program) {
   const output = [];
 
@@ -17,56 +19,52 @@ export default function generate(program) {
       p.compositions.forEach(gen);
     },
 
+    // Declarations
     NoteDecl(d) {
-      output.push(
-        `${d.isConst ? "const" : "let"} ${gen(d.name)} = ${gen(d.initializer)};`
-      );
+      const declarator = d.modifier === "const" ? "const" : "let";
+      output.push(`${declarator} ${gen(d.variable)} = ${gen(d.initializer)};`);
     },
 
     GrandDecl(d) {
-      output.push(`class ${d.name} {`);
-      output.push(`  constructor(${d.fields.map((f) => f.name).join(", ")}) {`);
-      d.fields.forEach((f) => {
-        output.push(`    this.${f.name} = ${f.name};`);
-      });
-      output.push(`  }`);
-      output.push(`}`);
-    },
-
-    MeasureDecl(d) {
-      output.push(
-        `function ${d.name}(${d.params.map((p) => p.name).join(", ")}) {`
-      );
-      d.body.forEach(gen);
-      if (d.returnType.name !== "void") {
-        output.push(`return ${gen(d.body[d.body.length - 1])};`);
+      // Grand declarations translate to JS classes
+      output.push(`class ${gen(d.type)} {`);
+      output.push(`constructor(${d.type.fields.map(gen).join(", ")}) {`);
+      for (let field of d.type.fields) {
+        output.push(`this[${JSON.stringify(gen(field))}] = ${gen(field)};`);
       }
+      output.push("}");
       output.push("}");
     },
 
-    // Variables and parameters
-    Variable(v) {
-      return targetName(v);
-    },
-
-    Field(f) {
-      return targetName(f);
+    MeasureDecl(d) {
+      // Measure declarations translate to JS functions
+      output.push(
+        `function ${gen(d.measure)}(${d.measure.params.map(gen).join(", ")}) {`
+      );
+      d.measure.body.forEach(gen);
+      output.push("}");
     },
 
     // Statements
-    BumpStatement(s) {
+    Bump(s) {
+      // Handle ++ and -- operations
       output.push(`${gen(s.variable)}${s.op};`);
     },
 
-    AssignStatement(s) {
+    Assignment(s) {
       output.push(`${gen(s.target)} = ${gen(s.source)};`);
     },
 
-    CallStatement(s) {
-      output.push(`${gen(s.call)};`);
+    Play(s) {
+      // Play statement would translate to some function call in the target environment
+      output.push(`play(${gen(s.note)});`);
     },
 
-    BreakStatement() {
+    Call(s) {
+      output.push(`${gen(s.callee)}(${s.args.map(gen).join(", ")});`);
+    },
+
+    BreakStatement(s) {
       output.push("break;");
     },
 
@@ -74,116 +72,161 @@ export default function generate(program) {
       output.push(`return ${gen(s.expression)};`);
     },
 
-    ShortReturnStatement() {
+    ShortReturnStatement(s) {
       output.push("return;");
     },
 
-    // Control structures
-    IfStmt(s) {
+    // Control flow
+    IfStatement(s) {
       output.push(`if (${gen(s.test)}) {`);
       s.consequent.forEach(gen);
-      if (s.alternate?.kind?.endsWith?.("IfStmt")) {
-        output.push("} else");
-        gen(s.alternate);
+      if (s.alternate) {
+        if (s.alternate.kind?.endsWith?.("IfStatement")) {
+          output.push("} else ");
+          gen(s.alternate);
+        } else {
+          output.push("} else {");
+          s.alternate.forEach(gen);
+          output.push("}");
+        }
       } else {
-        output.push("} else {");
-        s.alternate.forEach(gen);
         output.push("}");
       }
     },
 
-    ShortIfStmt(s) {
+    ShortIfStatement(s) {
       output.push(`if (${gen(s.test)}) {`);
       s.consequent.forEach(gen);
       output.push("}");
     },
 
-    RepeatWhileStmt(s) {
+    RepeatWhileStatement(s) {
       output.push(`while (${gen(s.test)}) {`);
       s.body.forEach(gen);
       output.push("}");
     },
 
-    TimesStmt(s) {
-      output.push(`for (let i = 0; i < ${gen(s.times)}; i++) {`);
+    RepeatTimesStatement(s) {
+      // JS can only repeat n times if you give it a counter variable!
+      const i = targetName({ name: "i" });
+      output.push(`for (let ${i} = 0; ${i} < ${gen(s.count)}; ${i}++) {`);
       s.body.forEach(gen);
       output.push("}");
     },
 
-    RangeStmt(s) {
-      const endOp = s.rangeOp === "..." ? "<=" : "<";
+    ForRangeStatement(s) {
+      const i = targetName(s.iterator);
+      const op = s.op === "..." ? "<=" : "<";
       output.push(
-        `for (let ${gen(s.variable)} = ${gen(s.start)}; ${gen(
-          s.variable
-        )} ${endOp} ${gen(s.end)}; ${gen(s.variable)}++) {`
+        `for (let ${i} = ${gen(s.low)}; ${i} ${op} ${gen(s.high)}; ${i}++) {`
       );
       s.body.forEach(gen);
       output.push("}");
     },
 
-    ForEachStmt(s) {
-      output.push(`for (let ${gen(s.element)} of ${gen(s.collection)}) {`);
+    ForCollectionStatement(s) {
+      output.push(`for (let ${gen(s.iterator)} of ${gen(s.collection)}) {`);
       s.body.forEach(gen);
       output.push("}");
     },
 
-    Block(b) {
-      output.push("{");
-      b.statements.forEach(gen);
-      output.push("}");
-    },
-
     // Expressions
-    ConditionalExp(e) {
-      return `(${gen(e.test)} ? ${gen(e.consequent)} : ${gen(e.alternate)})`;
+    Conditional(e) {
+      return `((${gen(e.test)}) ? (${gen(e.consequent)}) : (${gen(
+        e.alternate
+      )}))`;
     },
 
-    UnwrapElseExp(e) {
-      return `(${gen(e.left)} ?? ${gen(e.right)})`;
+    UnwrapElseExpression(e) {
+      return `(${gen(e.optional)} ?? ${gen(e.alternate)})`;
     },
 
-    BinaryExp(e) {
+    OrExpression(e) {
+      return e.terms.map(gen).join(" || ");
+    },
+
+    AndExpression(e) {
+      return e.terms.map(gen).join(" && ");
+    },
+
+    BitOrExpression(e) {
+      return e.terms.map(gen).join(" | ");
+    },
+
+    BitXorExpression(e) {
+      return e.terms.map(gen).join(" ^ ");
+    },
+
+    BitAndExpression(e) {
+      return e.terms.map(gen).join(" & ");
+    },
+
+    CompareExpression(e) {
       const op = { "==": "===", "!=": "!==" }[e.op] ?? e.op;
-      // Special case for array equality
-      if (e.op === "==" || e.op === "!=") {
-        if (e.left.type.startsWith("[")) {
-          return `JSON.stringify(${gen(e.left)}) ${op} JSON.stringify(${gen(
-            e.right
-          )})`;
-        }
-      }
       return `(${gen(e.left)} ${op} ${gen(e.right)})`;
     },
 
-    UnaryExp(e) {
-      if (e.op === "#") {
-        return `${gen(e.operand)}.length`;
-      } else if (e.op === "some") {
-        return `new Some(${gen(e.operand)})`;
-      } else if (e.op === "random") {
-        return `Math.random() * ${gen(e.operand)}`;
-      }
-      return `${e.op}(${gen(e.operand)})`;
+    ShiftExpression(e) {
+      return `(${gen(e.left)} ${e.op} ${gen(e.right)})`;
     },
 
-    CallExp(e) {
+    AddExpression(e) {
+      return `(${gen(e.left)} ${e.op} ${gen(e.right)})`;
+    },
+
+    MultiplyExpression(e) {
+      return `(${gen(e.left)} ${e.op} ${gen(e.right)})`;
+    },
+
+    PowerExpression(e) {
+      return `Math.pow(${gen(e.left)}, ${gen(e.right)})`;
+    },
+
+    UnaryExpression(e) {
+      const operand = gen(e.operand);
+      if (e.op === "some") return operand;
+      if (e.op === "#") return `${operand}.length`;
+      if (e.op === "random")
+        return `((a=>a[Math.floor(Math.random()*a.length)])(${operand}))`;
+      return `${e.op}(${operand})`;
+    },
+
+    EmptyOptional(e) {
+      return "undefined";
+    },
+
+    NilExpression(e) {
+      return "null";
+    },
+
+    CallExpression(e) {
       return `${gen(e.callee)}(${e.args.map(gen).join(", ")})`;
     },
 
-    SubscriptExp(e) {
-      return `${gen(e.array)}[${gen(e.index)}]`;
+    SubscriptExpression(e) {
+      const optional = e.op === "?[" ? "?" : "";
+      return `${gen(e.array)}${optional}[${gen(e.index)}]`;
     },
 
-    MemberExp(e) {
-      return `${gen(e.object)}.${gen(e.field)}`;
+    MemberExpression(e) {
+      const object = gen(e.object);
+      const field = JSON.stringify(gen(e.field));
+      const chain = e.op === "." ? "" : "?";
+      return `${object}${chain}[${field}]`;
     },
 
-    ArrayExp(e) {
+    IdExpression(e) {
+      // Special handling for standard library constants if needed
+      if (e.ref === standardLibrary.π) return "Math.PI";
+      return targetName(e.ref);
+    },
+
+    EmptyArrayExpression(e) {
+      return "[]";
+    },
+
+    ArrayExpression(e) {
       return `[${e.elements.map(gen).join(", ")}]`;
-    },
-
-    EmptyArrayExp(e) {
-      return `[]`;
     },
 
     // Literals
@@ -196,30 +239,34 @@ export default function generate(program) {
     },
 
     StringLiteral(e) {
-      return `"${e.value}"`;
+      return JSON.stringify(e.value);
     },
 
     BooleanLiteral(e) {
-      return e.value ? "true" : "false";
+      return e.value === "on" ? "true" : "false";
     },
 
-    NilLiteral(e) {
-      return "null";
+    // Types and variables
+    Variable(v) {
+      return targetName(v);
+    },
+
+    Measure(m) {
+      return targetName(m);
+    },
+
+    Type(t) {
+      return targetName(t);
+    },
+
+    Field(f) {
+      return targetName(f);
+    },
+
+    Param(p) {
+      return targetName(p);
     },
   };
-
-  // Generate the runtime support code first
-  output.unshift(`
-    class Some {
-      constructor(value) {
-        this.value = value;
-      }
-      
-      unwrapElse(defaultValue) {
-        return this.value ?? defaultValue;
-      }
-    }
-  `);
 
   gen(program);
   return output.join("\n");

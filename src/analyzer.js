@@ -56,10 +56,19 @@ export default function analyze(match) {
     must(context.lookup(name), `Identifier ${name} not declared`, at);
   }
 
+  // function mustBeType(entity, at) {
+  //   must(
+  //     entity?.kind === "GrandType" ||
+  //       ["number", "boolean", "string"].includes(entity),
+  //     `Expected a type`,
+  //     at
+  //   );
+  // }
+
   function mustBeType(entity, at) {
     must(
       entity?.kind === "GrandType" ||
-        ["number", "boolean", "string"].includes(entity),
+        ["number", "boolean", "string", "void", "any"].includes(entity),
       `Expected a type`,
       at
     );
@@ -122,6 +131,10 @@ export default function analyze(match) {
       return core.program(compositions.children.map((c) => c.analyze()));
     },
 
+    _iter(...children) {
+      return children.map((child) => child.analyze());
+    },
+
     Composition_bump(exp, op, _semi) {
       const variable = exp.analyze();
       mustBeMutable(variable, exp);
@@ -181,13 +194,13 @@ export default function analyze(match) {
       return core.noteDeclaration(variable, initializer);
     },
 
-    GrandDecl(_grand, id, _open, fields, _close) {
-      mustNotAlreadyBeDeclared(id.sourceString, id);
-      const fieldList = fields.children.map((f) => f.analyze());
-      const grandType = core.grandType(id.sourceString, fieldList);
-      context.add(id.sourceString, grandType);
-      return core.grandDeclaration(grandType);
-    },
+    // GrandDecl(_grand, id, _open, fields, _close) {
+    //   mustNotAlreadyBeDeclared(id.sourceString, id);
+    //   const fieldList = fields.children.map((f) => f.analyze());
+    //   const grandType = core.grandType(id.sourceString, fieldList);
+    //   context.add(id.sourceString, grandType);
+    //   return core.grandDeclaration(grandType);
+    // },
 
     Field(id, _colon, type) {
       return core.field(id.sourceString, type.sourceString);
@@ -248,14 +261,30 @@ export default function analyze(match) {
     //   return type;
     // },
 
+    // Type_id(id) {
+    //   const type = id.sourceString;
+    //   if (["number", "boolean", "string", "void", "any"].includes(type)) {
+    //     return type;
+    //   }
+    //   const entity = context.lookup(type);
+    //   must(entity, `Identifier ${type} not declared`, id);
+    //   mustBeType(entity, id);
+    //   return type;
+    // },
+
     Type_id(id) {
       const type = id.sourceString;
+      // Built-in types are always valid
       if (["number", "boolean", "string", "void", "any"].includes(type)) {
         return type;
       }
+
+      // Check if this is a user-defined type (GrandType)
       const entity = context.lookup(type);
-      must(entity, `Identifier ${type} not declared`, id);
-      mustBeType(entity, id);
+      if (!entity || entity.kind !== "GrandType") {
+        throw new Error(`Identifier ${type} not declared`);
+      }
+
       return type;
     },
 
@@ -387,20 +416,45 @@ export default function analyze(match) {
       return core.binaryExpression("&&", leftExp, rightExp, "boolean");
     },
 
-    Exp3_bitor(left, _op, right) {
-      const leftExp = left.analyze();
-      const rightExp = right.analyze();
+    // Exp3_bitor(left, _op, right) {
+    //   const leftExp = left.analyze();
+    //   const rightExp = right.analyze();
+    //   must(
+    //     leftExp.type === "int" || leftExp.type === "number",
+    //     "Expected number",
+    //     left
+    //   );
+    //   must(
+    //     rightExp.type === "int" || rightExp.type === "number",
+    //     "Expected number",
+    //     right
+    //   );
+    //   return core.binaryExpression("|", leftExp, rightExp, "int");
+    // },
+
+    Exp3_bitor(left, ops, rights) {
+      let result = left.analyze();
       must(
-        leftExp.type === "int" || leftExp.type === "number",
+        result.type === "int" || result.type === "number",
         "Expected number",
         left
       );
-      must(
-        rightExp.type === "int" || rightExp.type === "number",
-        "Expected number",
-        right
-      );
-      return core.binaryExpression("|", leftExp, rightExp, "int");
+
+      // Handle each right operand in the iteration
+      const rightNodes = rights.asIteration().children;
+      const opNodes = ops.asIteration().children;
+
+      for (let i = 0; i < rightNodes.length; i++) {
+        const rightExp = rightNodes[i].analyze();
+        must(
+          rightExp.type === "int" || rightExp.type === "number",
+          "Expected number",
+          rightNodes[i]
+        );
+        result = core.binaryExpression("|", result, rightExp, "int");
+      }
+
+      return result;
     },
 
     // Exp3_bitxor(left, _op, right) {
