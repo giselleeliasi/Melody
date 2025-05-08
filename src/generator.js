@@ -122,7 +122,7 @@ export default function generate(program) {
       return "null";
     },
     Variable(v) {
-      return targetName(v);
+      return v.name;
     },
     NumberLiteral(n) {
       return n.value;

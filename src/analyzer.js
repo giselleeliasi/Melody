@@ -38,6 +38,27 @@ export default function analyze(match) {
         core.measure("print", [core.Param("value", "any")], "void", []),
       ],
       ["play", core.measure("play", [core.Param("value", "any")], "void", [])],
+      ["sin", core.measure("sin", [core.Param("x", "number")], "number", [])],
+      ["cos", core.measure("cos", [core.Param("x", "number")], "number", [])],
+      ["exp", core.measure("exp", [core.Param("x", "number")], "number", [])],
+      ["ln", core.measure("ln", [core.Param("x", "number")], "number", [])],
+      [
+        "hypot",
+        core.measure(
+          "hypot",
+          [core.Param("x", "number"), core.Param("y", "number")],
+          "number",
+          []
+        ),
+      ],
+      [
+        "bytes",
+        core.measure("bytes", [core.Param("s", "string")], "[number]", []),
+      ],
+      [
+        "codepoints",
+        core.measure("codepoints", [core.Param("s", "string")], "[number]", []),
+      ],
     ]),
   });
 
@@ -55,15 +76,6 @@ export default function analyze(match) {
   function mustBeDeclared(name, at) {
     must(context.lookup(name), `Identifier ${name} not declared`, at);
   }
-
-  // function mustBeType(entity, at) {
-  //   must(
-  //     entity?.kind === "GrandType" ||
-  //       ["number", "boolean", "string"].includes(entity),
-  //     `Expected a type`,
-  //     at
-  //   );
-  // }
 
   function mustBeType(entity, at) {
     must(
@@ -91,9 +103,10 @@ export default function analyze(match) {
   }
 
   function mustBeArrayOrString(e, at) {
+    const type = typeof e.type === "string" ? e.type : e.type?.kind;
     must(
-      e.type === "string" || e.type.endsWith("[]"),
-      `Expected string or array, got ${e.type}`,
+      type === "string" || type === "ArrayType",
+      `Expected string or array, got ${type}`,
       at
     );
   }
@@ -194,14 +207,6 @@ export default function analyze(match) {
       return core.noteDeclaration(variable, initializer);
     },
 
-    // GrandDecl(_grand, id, _open, fields, _close) {
-    //   mustNotAlreadyBeDeclared(id.sourceString, id);
-    //   const fieldList = fields.children.map((f) => f.analyze());
-    //   const grandType = core.grandType(id.sourceString, fieldList);
-    //   context.add(id.sourceString, grandType);
-    //   return core.grandDeclaration(grandType);
-    // },
-
     Field(id, _colon, type) {
       return core.field(id.sourceString, type.sourceString);
     },
@@ -252,25 +257,6 @@ export default function analyze(match) {
       const params = paramTypes.asIteration().children.map((t) => t.analyze());
       return `(${params.join(",")})->${returnType.analyze()}`;
     },
-
-    // Type_id(id) {
-    //   const type = id.sourceString;
-    //   const entity = context.lookup(type);
-    //   mustBeDeclared(type, id);
-    //   mustBeType(entity, id);
-    //   return type;
-    // },
-
-    // Type_id(id) {
-    //   const type = id.sourceString;
-    //   if (["number", "boolean", "string", "void", "any"].includes(type)) {
-    //     return type;
-    //   }
-    //   const entity = context.lookup(type);
-    //   must(entity, `Identifier ${type} not declared`, id);
-    //   mustBeType(entity, id);
-    //   return type;
-    // },
 
     Type_id(id) {
       const type = id.sourceString;
@@ -389,7 +375,12 @@ export default function analyze(match) {
       const thenBranch = thenExp.analyze();
       const elseBranch = elseExp.analyze();
       mustBeSameType(thenBranch, elseBranch, elseExp);
-      return core.conditionalExpression(condition, thenBranch, elseBranch);
+      return core.conditionalExpression(
+        condition,
+        thenBranch,
+        elseBranch,
+        thenBranch.type // Add the type
+      );
     },
 
     Exp1_unwrapelse(left, _op, right) {
@@ -416,22 +407,6 @@ export default function analyze(match) {
       return core.binaryExpression("&&", leftExp, rightExp, "boolean");
     },
 
-    // Exp3_bitor(left, _op, right) {
-    //   const leftExp = left.analyze();
-    //   const rightExp = right.analyze();
-    //   must(
-    //     leftExp.type === "int" || leftExp.type === "number",
-    //     "Expected number",
-    //     left
-    //   );
-    //   must(
-    //     rightExp.type === "int" || rightExp.type === "number",
-    //     "Expected number",
-    //     right
-    //   );
-    //   return core.binaryExpression("|", leftExp, rightExp, "int");
-    // },
-
     Exp3_bitor(left, ops, rights) {
       let result = left.analyze();
       must(
@@ -456,38 +431,6 @@ export default function analyze(match) {
 
       return result;
     },
-
-    // Exp3_bitxor(left, _op, right) {
-    //   const leftExp = left.analyze();
-    //   const rightExp = right.analyze();
-    //   mustBeNumeric(leftExp, left);
-    //   mustBeNumeric(rightExp, right);
-    //   return core.binaryExpression("^", leftExp, rightExp, "number");
-    // },
-
-    // Exp3_bitand(left, _op, right) {
-    //   const leftExp = left.analyze();
-    //   const rightExp = right.analyze();
-    //   mustBeNumeric(leftExp, left);
-    //   mustBeNumeric(rightExp, right);
-    //   return core.binaryExpression("&", leftExp, rightExp, "number");
-    // },
-
-    // Exp3_bitor(left, _op, right) {
-    //   left = left.analyze(this.context);
-    //   right = right.analyze(this.context);
-    //   must(
-    //     left.type === "int" || left.type === "number",
-    //     "Expected number",
-    //     left
-    //   );
-    //   must(
-    //     right.type === "int" || right.type === "number",
-    //     "Expected number",
-    //     right
-    //   );
-    //   return core.binaryExpression("|", left, right, "int");
-    // },
 
     Exp3_bitxor(left, _op, right) {
       left = left.analyze(this.context);
@@ -631,29 +574,6 @@ export default function analyze(match) {
       return core.nilLiteral(typeStr);
     },
 
-    // Exp9_call(fun, _open, args, _close) {
-    //   const func = fun.analyze();
-    //   must(
-    //     func.kind === "Measure" ||
-    //       (func.kind === "id" && func.name === "print"),
-    //     `Expected function`,
-    //     fun
-    //   );
-    //   const argExps = args.asIteration().children.map((a) => a.analyze());
-
-    //   if (func.kind === "Measure") {
-    //     must(
-    //       argExps.length === func.parameters.length,
-    //       `Expected ${func.parameters.length} argument(s) but got ${argExps.length} passed`,
-    //       fun
-    //     );
-    //     argExps.forEach((arg, i) => {
-    //       mustBeAssignable(arg, func.parameters[i].type, args.children[i]);
-    //     });
-    //   }
-    //   return core.callExpression(func, argExps, func.returnType || "void");
-    // },
-
     Exp9_subscript(array, _open, index, _close) {
       const arr = array.analyze();
       const idx = index.analyze();
@@ -661,14 +581,6 @@ export default function analyze(match) {
       mustBeNumeric(idx, index);
       return core.subscriptExpression(arr, idx, arr.type.baseType);
     },
-
-    // Exp9_member(object, _dot, id) {
-    //   const obj = object.analyze();
-    //   must(obj.kind === "Grand", `Expected grand type`, object);
-    //   const field = obj.fields.find((f) => f.name === id.sourceString);
-    //   must(field, `No such field: ${id.sourceString}`, id);
-    //   return core.memberExpression(obj, field, field.type);
-    // },
 
     Exp9_call(fun, _open, args, _close) {
       const func = fun.analyze();

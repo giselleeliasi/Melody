@@ -10,14 +10,6 @@ export function variable(name, type, mutable) {
   return { kind: "Variable", name, type, mutable };
 }
 
-// export function GrandDecl(name, fields) {
-//   return { kind: "GrandDecl", name, fields };
-// }
-
-// export function Field(name, type) {
-//   return { kind: "Field", name, type };
-// }
-
 export function measureDeclaration(measure) {
   return { kind: "measureDeclaration", measure };
 }
@@ -84,18 +76,6 @@ export function callExpression(callee, args, returnType) {
 
 export const ShortReturn = { kind: "ShortReturn" };
 
-// export function ifStatement(test, consequent, alternate) {
-//   return { kind: "IfStmt", test, consequent, alternate };
-// }
-
-// export function shortIfStmt(test, consequent) {
-//   return { kind: "ShortIfStmt", test, consequent };
-// }
-
-// export function ElsifStmt(test, consequent, alternate) {
-//   return { kind: "ElsifStmt", test, consequent, alternate };
-// }
-
 export function ifStatement(test, consequent, alternate) {
   return { kind: "IfStatement", test, consequent, alternate };
 }
@@ -123,10 +103,6 @@ export function ForRangeStmt(iterator, low, op, high, body) {
 export function ForStmt(iterator, collection, body) {
   return { kind: "ForStmt", iterator, collection, body };
 }
-
-// export function Conditional(test, consequent, alternate, type) {
-//   return { kind: "Conditional", test, consequent, alternate, type };
-// }
 
 export function binaryExpression(op, left, right, type) {
   return {
@@ -160,14 +136,6 @@ export function arrayExpression(elements) {
   return { kind: "ArrayExp", elements, type: arrayType(elements[0].type) };
 }
 
-// export function EmptyArray(type) {
-//   return { kind: "EmptyArray", type };
-// }
-
-// export function Member(object, op, field, optional) {
-//   return { kind: "Member", object, op, field, optional, type: field.type };
-// }
-
 export function grandDeclaration(grandType) {
   return { kind: "GrandDecl", grandType };
 }
@@ -199,10 +167,6 @@ export function memberExpression(object, field, type) {
 export function emptyArrayExpression(type) {
   return { kind: "EmptyArray", type };
 }
-
-// export function Call(callee, args, optional) {
-//   return { kind: "Call", callee, args, optional, type: callee.type.returnType };
-// }
 
 export function Call(callee, args, optional) {
   const returnType =
